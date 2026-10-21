@@ -65,15 +65,16 @@ python3 atlas2pdf.py --batch /Volumes/ATLAS/DVD1 --out ~/AtlasPDF
 python3 atlas2pdf.py --batch /Volumes/ATLAS-1/DVD2 --out ~/AtlasPDF
 ```
 
-Çıktı adları derginin gerçek sayı numarasıyla üretilir:
+Çıktı adları derginin gerçek sayı numarasıyla, düz dosya olarak üretilir:
 
 ```
-1993-04 Atlas Dergisi 001/1993-04 Atlas Dergisi 001.pdf
-1994-01 Atlas Dergisi 010/1994-01 Atlas Dergisi 010.pdf
+1993-04 Atlas Dergisi 001.pdf
+1994-01 Atlas Dergisi 010.pdf
 …
+1993-04 Atlas Dergisi 001 harita-poster.jpg   (varsa, ek dosya)
 ```
 
-Yarıda kalırsa aynı komutu tekrar çalıştırın: tamamlanmış sayılar atlanır.
+Bir sayı yarıda kalırsa aynı komutu tekrar çalıştırın: tamamlanmış sayılar (PDF var mı diye bakıp) atlanır.
 
 ### Seçenekler
 
@@ -81,8 +82,8 @@ Yarıda kalırsa aynı komutu tekrar çalıştırın: tamamlanmış sayılar atl
 |---|---|
 | `--batch <dizin>` | Klasördeki tüm `.bts` dosyalarını sırayla çevirir (DVD'nin kökü ya da `DVD1/` klasörü) |
 | `--out <dizin>` | Toplu çıktı klasörü (varsayılan: `AtlasPDF`) |
-| `--pdf-only` | PDF yazıldıktan sonra JPEG'leri siler (disk tasarrufu) |
-| `--keep-jpg` | Toplu çevirimde JPEG'leri de saklar |
+| `--keep-jpg` | Toplu çevirimde JPEG'leri de saklar (sayı başına klasör açar; varsayılan: sadece PDF) |
+| `--pdf-only` | Tek dosya çeviriminde de JPEG'leri siler |
 | `--blanks 4,21,32` | Belirtilen sayfalardan **sonra** siyah dolgu sayfası ekler |
 | `--tiles 102-107` | Harita dilimlerini otomatik bulamazsa aralığı elle verir |
 

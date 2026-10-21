@@ -23,6 +23,7 @@ import statistics
 import struct
 import subprocess
 import sys
+import tempfile
 import zlib
 from collections import defaultdict
 
@@ -202,7 +203,7 @@ def black_bars(im, frac=0.9):
 
 def _thumb(im, w=120):
     h = max(1, round(im.height * w / im.width))
-    return list(im.convert('L').resize((w, h), Image.BILINEAR).getdata()), w, h
+    return list(im.convert('L').resize((w, h), Image.BILINEAR).tobytes()), w, h
 
 
 def _overlap(A, B):
@@ -263,7 +264,9 @@ def make_poster(pages, out_path, tiles_range=None):
         small = im.resize((400, round(im.height * 400 / im.width)))
         l, r, _, top, bot = black_bars(small)
         col = small.resize((80, 107))
-        sat = sum(max(p) - min(p) for p in col.getdata()) / (80 * 107)
+        raw = col.tobytes()
+        sat = sum(max(raw[i:i + 3]) - min(raw[i:i + 3])
+                  for i in range(0, len(raw), 3)) / (80 * 107)
         # ponytail: doygunluk eşiği bu dergi ailesine göre kalibre edildi (harita
         # illüstrasyonu renkli, siyah barlı fotoğraf kolajları renksiz). Tutmazsa
         # --tiles ilk-son ile açıkça ver.
@@ -290,8 +293,10 @@ def make_poster(pages, out_path, tiles_range=None):
 
 
 # ---------------------------------------------------------------- dönüştürme
-def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, log=print):
-    """Tek bir SWF/.bts dosyasını <out>/NNN.jpg + <out>/<ad>.pdf olarak çıkarır."""
+def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, name=None, log=print):
+    """Tek bir SWF/.bts dosyasını <out>/NNN.jpg + <out>/<ad>.pdf olarak çıkarır.
+    name verilirse PDF/poster bu adı taşır (toplu çevirimde dergi sayı adı)."""
+    stem = name or os.path.basename(out)
     tmp = out + '.raw'
     shutil.rmtree(tmp, ignore_errors=True)
     os.makedirs(tmp, exist_ok=True)
@@ -354,13 +359,13 @@ def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, log=print):
         shutil.move(src, dst)
         final.append(dst)
 
-    name = os.path.basename(out)
-    pdf_path = os.path.join(out, name + '.pdf')
+    pdf_path = os.path.join(out, stem + '.pdf')
     write_pdf(final, pdf_path)
     log(f'  {len(final)} sayfa ({blanked} siyah dolgu) -> {pdf_path} '
         f'({os.path.getsize(pdf_path) / 1e6:.1f} MB)')
 
-    poster = make_poster(final, os.path.join(out, 'harita-poster.jpg'), tiles_range)
+    poster_name = 'harita-poster.jpg' if name is None else name + ' harita-poster.jpg'
+    poster = make_poster(final, os.path.join(out, poster_name), tiles_range)
     if poster:
         cnt, idx, size = poster
         log(f'  harita posteri: {cnt} dilim ({idx[0]}..{idx[-1]}), {size[0]}x{size[1]} px')
@@ -404,17 +409,26 @@ def batch(root, outdir, pdf_only=True, blanks_map=None, tiles_map=None, log=prin
             continue
         year, sayi, issue = meta
         name = f'{year}-{sayi:02d} Atlas Dergisi {issue:03d}'
-        target = os.path.join(outdir, name)
-        if os.path.exists(os.path.join(target, name + '.pdf')):
+        if os.path.exists(os.path.join(outdir, name + '.pdf')):
             log(f'{name}: zaten var, atlandı')
             continue
         log(f'{name}:')
         try:
-            convert(f, target,
-                    blanks=(blanks_map or {}).get(issue, ()),
-                    pdf_only=pdf_only,
-                    tiles_range=(tiles_map or {}).get(issue),
-                    log=log)
+            if pdf_only:                    # düz PDF çıktısı: jpg'ler geçici klasörde
+                work = tempfile.mkdtemp(prefix='atlas-')
+                try:
+                    convert(f, work, blanks=blanks_map.get(issue, ()),
+                            tiles_range=(tiles_map or {}).get(issue), name=name, log=log)
+                    for suffix in ('.pdf', ' harita-poster.jpg'):
+                        src = os.path.join(work, name + suffix)
+                        if os.path.exists(src):
+                            shutil.move(src, os.path.join(outdir, name + suffix))
+                finally:
+                    shutil.rmtree(work, ignore_errors=True)
+            else:
+                convert(f, os.path.join(outdir, name),
+                        blanks=blanks_map.get(issue, ()),
+                        tiles_range=(tiles_map or {}).get(issue), name=name, log=log)
             ok += 1
         except Exception as e:                       # tek sayı patlarsa devam et
             log(f'  HATA: {e}')
