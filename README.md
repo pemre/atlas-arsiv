@@ -30,9 +30,9 @@ Adlara göre sıralayan her araç (ve `swfextract`'ın çıktısı) sayfa sıras
                  →  DefineShape  →  bitmap fill id  →  JPEG
 ```
 
-Ayrıca her sayı iki çözünürlükte gömülüdür (`pN` = 800×1067, `pageN` = 495×660). Araç **en çok etiketli aileyi** (derginin tamamı), eşitlik durumunda yüksek çözünürlüklü olanı seçer — yani **DVD'deki en iyi kopya** çıkar. Poster/ek gibi küçük ama büyük görselli kümeler (`pek`, `pa`, `pag` …) böylece elenir.
+Ayrıca her sayı iki çözünürlükte gömülüdür (`pN` = 800×1067, `pageN` = 495×660). Sayfa kümesini **en çok etiketli aile** belirler (derginin tamamı), ama görsel **her sayfa için mevcut en yüksek çözünürlüklü kopyadan** alınır — yani **DVD'deki en iyi kopya** çıkar. Poster/ek gibi küçük ama büyük görselli kümeler (`pek`, `pa`, `pag` …) böylece elenir.
 
-Nadir de olsa DVD'de başlığı bozuk bir JPEG olabiliyor (Python "decompression bomb" hatası verir). Böyle bir sayfada araç aynı sayfanın düşük çözünürlüklü ikizini kullanır, sayfa sırası bozulmaz; logda `uyarı:` satırı görürsünüz.
+Bazı sayılarda yüksek çözünürlüklü aile eksiktir (örneğin 116 sayfanın 113'ü) ya da tek tük görselin JPEG başlığı bozuktur ("decompression bomb" hatası). Bu durumda o sayfa düşük çözünürlüklü ikizinden alınır; sayfa sırası ve sayısı bozulmaz, logda `uyarı:` satırı görürsünüz.
 
 ---
 
