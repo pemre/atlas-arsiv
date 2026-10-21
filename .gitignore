@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# çevirim çıktıları
+AtlasPDF/
+*_pages/
+*.raw/
