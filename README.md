@@ -146,7 +146,8 @@ Toplu çevirim tek sayı patlarsa durmaz, hatayı yazıp devam eder ve sonunda l
 ## 2006-2012: ayrı JPG sayfaları (`dvd2-images2pdf.py`)
 
 2006'dan sonra DVD'de Flash filmi yok: sayfalar klasörde **tek tek JPG** olarak duruyor,
-`.exe` sadece bir görüntüleyici kabuk. Sayfa sırası bu yüzden dosya düzeninden okunur.
+`.exe` bir **Authorware** çalıştırıcısı (`Authorware` ×8, `aam` paket kitaplığı) — sayfaları
+gömmez, yalnız gösterir. Sayfa sırası bu yüzden dosya düzeninden okunur.
 
 ### Klasör düzeni yıla göre değişir
 
@@ -207,8 +208,12 @@ sıra için kullanılmaz, ad sıralamasına dönülür.
 - `atlas.exe`'nin son ~13 MB'ı PE dışında **paketli katman** (`PCRS` + `0xAFBCADAC`); içinde
   Lua bytecode ve bitmap chunk'ları var, Director 4CC'si (`RIFX`/`XFIR`/`CASt`/`Lscr`/`VWSC`)
   ve düz metin dosya adı yok.
-- Kabuk **VB6**: `alPicView.ocx` = `MSVBVM60.DLL` ile çalışan 86 KB'lık ActiveX görüntüleyici;
-  içinde ne görsel adı ne klasör listesi var.
+- Kabuk **Authorware** (`Authorware` ×8, `aam`), sayfaları gösteren kontrol ise
+  `alPicView.ocx`: `MSVBVM60.DLL` ile çalışan 86 KB'lık VB6 ActiveX. İçinde ne görsel adı
+  ne klasör listesi var. (Crossover/XP'de "alPicview control could not be installed" hatası
+  bu kontrolün kaydedilememesinden çıkar — `winetricks vb6run` + `regsvr32 alPicView.ocx`
+  gerekir. Klasördeki `*.U32`/`*.XMO` dosyaları da Authorware Xtra'larıdır, eski sürümden
+  kalma değildir.)
 - **Belirleyici:** exe `FindFirstFile` çağırıyor, yani sayfa listesini **çalışma anında
   klasörden** okuyor. Saklanmış dizi yok; sıra = klasör listeleme sırası.
 
