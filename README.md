@@ -133,10 +133,10 @@ Korunuyor. SWF'in içindeki veri JPEG'dir (`DCTDecode`). `swfextract` bu sıkı�
 DVD'de bu var: aynı sayfa 800×1067 (yüksek) ve 495×660 (düşük) olarak iki kez gömülü. Daha yüksek çözünürlük DVD'de yok — basılı dergiyi yeniden taramadan elde edilemez.
 
 **Ne kadar sürer, ne kadar yer kaplar?**
-Mac'te sayı başına ~10 saniye (2006 sonrası JPG'lerde ~30 saniye). Tam arşiv: 237 PDF, 25.614 sayfa, **7,4 GB** (sayı başına 25-40 MB). JPEG'leri de saklarsan iki katı.
+Mac'te sayı başına ~10 saniye (2006 sonrası JPG'lerde ~30 saniye). Tam arşiv: 237 PDF, 25.619 sayfa, **7,4 GB** (sayı başına 25-40 MB). JPEG'leri de saklarsan iki katı.
 
 **Hangi DVD'lerle test edildi?**
-`Atlas_Dergisi_1993-2002_DVD1.iso` (117 sayı) ve `Atlas_Dergisi_2003-2012_DVD2.iso` — toplam **237 sayı** (1993-04 → 2012-12), 25.614 sayfa, 7,4 GB. DVD1'de 1993-2005 Flash `.bts` dosyaları (153 sayı), DVD2'de 2003-2005'in devamı + 2006-2012 JPG klasörleri (84 sayı) var.
+`Atlas_Dergisi_1993-2002_DVD1.iso` (117 sayı) ve `Atlas_Dergisi_2003-2012_DVD2.iso` — toplam **237 sayı** (1993-04 → 2012-12), 25.619 sayfa, 7,4 GB. DVD1'de 1993-2005 Flash `.bts` dosyaları (153 sayı), DVD2'de 2003-2005'in devamı + 2006-2012 JPG klasörleri (84 sayı) var.
 
 **Bir sayıda hata alırsam?**
 Toplu çevirim tek sayı patlarsa durmaz, hatayı yazıp devam eder ve sonunda listeler.
