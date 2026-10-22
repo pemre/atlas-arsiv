@@ -62,6 +62,8 @@ def collect(folder, pair_single=False):
                 prepend.append(os.path.join(folder, f))   # numarasız kapak
             continue
         path = os.path.join(folder, f)
+        if not os.path.exists(path):          # ISO'da boş klasör kaydı olabilir
+            continue
         if pn not in best or os.path.getsize(path) > os.path.getsize(best[pn]):
             best[pn] = path
     return best, prepend
