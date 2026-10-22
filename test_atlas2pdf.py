@@ -109,8 +109,18 @@ def test_dvd2_page_numbers():
         picks, prepend = d2.collect(d)
         assert len(prepend) == 3       # KAPAK_ocak + AT_203_KAPAK + dis_kapak
         st = d2.build(d, os.path.join(d, 'a.pdf'), cover=dis)
-        # kapak(1) + sayfa2 + dolgu(3) + yay(4-5); kapak üçlenseydi 6 olurdu
-        assert st['pages'] == 4, st
+        # kapak(1) + sayfa2 + yay(4-5); kapak üçlenseydi 5 olurdu
+        assert st['pages'] == 3, st
+        # delikler varsayılan olarak doldurulmaz, --blanks ile doldurulur
+        assert d2.build(d, os.path.join(d, 'b.pdf'), cover=dis, blanks=True)['pages'] == 4
+
+    # çakışan aralıklar (010 tek sayfa + 010_011 yayı) görsel DÜŞÜRMEMELİ
+    with tempfile.TemporaryDirectory() as d:
+        Image.new('RGB', (80, 107), (1, 2, 3)).save(os.path.join(d, '010_ocak.jpg'))
+        Image.new('RGB', (160, 107), (4, 5, 6)).save(os.path.join(d, '010_011_ocak.jpg'))
+        Image.new('RGB', (80, 107), (7, 8, 9)).save(os.path.join(d, '012_ocak.jpg'))
+        st = d2.build(d, os.path.join(d, 'c.pdf'))
+        assert st['images'] == 3 and st['pages'] == 3, st
 
 
 if __name__ == '__main__':

@@ -28,7 +28,7 @@ MONTHS = ['ocak', 'subat', 'mart', 'nisan', 'mayis', 'haziran',
 LEAD = re.compile(r'^[\s_.\-]*(\d{1,3})(?:[\s_.\-]*(\d{1,3}))?')
 
 
-PAGE = re.compile(r'(?:page|sayfa|safya)[\s_.\-]*(\d{1,3})(?:[\s_.\-]*(\d{1,3}))?')
+PAGE = re.compile(r'(?:pages?|sayfa)[\s_.\-]*(\d{1,3})(?:[\s_.\-]*(\d{1,3}))?')
 
 
 def page_numbers(filename):
@@ -59,11 +59,67 @@ def is_spread(path, threshold=1.2):
     return w / h > threshold
 
 
-def collect(folder):
+def _cekirdek(ad):
+    """'Ocak_014_015_L.jpg' -> '014_015' ; '001_s.jpg' -> '001' — ay eki ve
+    _L/_s/_2 gibi sürüm ekleri atılır, eşleşme sayı çekirdeği üzerinden yapılır."""
+    s = os.path.splitext(ad)[0].lower()
+    for m in MONTHS:
+        s = s.replace(m, '_')
+    s = re.sub(r'[^0-9]+', '_', s)
+    return '_'.join(x for x in s.split('_') if x)
+
+
+def dir_order(folder):
+    """2008+: <yıl>/**.dir içindeki sıralı jpg adları = uygulamanın gerçek sayfa sırası.
+
+    Director cast'i görselleri bu sırayla yükler; ad sıralamasından daha güvenilir
+    (aynı sayfanın 2/3/4 kopyaları, boşluklu adlar, klasörde olmayan kayıtlar var)."""
+    from pathlib import Path
+    p = Path(folder).resolve()
+    yil = next((x.name for x in p.parents if x.name.isdigit() and len(x.name) == 4), None)
+    ay = month_of(p.name)
+    if not yil or not ay:
+        return None
+    kok = next(x for x in p.parents if x.name == yil).parent
+    import glob
+    from pathlib import Path as P
+    d = sorted(glob.glob(os.path.join(kok, yil, '**', f'*{MONTHS[ay - 1]}*.dir'),
+                         recursive=True))
+    if not d:
+        return None
+    adlar = [m.group(0).decode() for m in
+             re.finditer(rb'[0-9]{3}[_0-9a-z]{0,20}\.jpg', P(d[0]).read_bytes(), re.I)]
+    sira = list(dict.fromkeys(_cekirdek(a) for a in adlar))    # sıra korunur
+    mevcut, hepsi = {}, []
+    for f in os.listdir(folder):               # aynı çekirdeğin büyük kopyası seçilir
+        if f.lower().endswith(('.jpg', '.jpeg', '.png')):
+            hepsi.append(f)
+            c = _cekirdek(f)
+            if c not in mevcut or os.path.getsize(os.path.join(folder, f)) > \
+                    os.path.getsize(os.path.join(folder, mevcut[c])):
+                mevcut[c] = f
+    bulunan = [mevcut[a] for a in sira if a in mevcut]
+    # .dir yarısından azını kapsıyorsa (2008 aralik.dir gibi tek kayıtlı çöp
+    # dosyalar) sıraya güvenme, ad sıralamasına dön
+    if len(bulunan) < 0.5 * len(mevcut):
+        return None
+    # aynı çekirdeğe düşen ikizler yüzünden hiç görsel kaybolmasın
+    return bulunan + [f for f in sorted(hepsi) if f not in set(bulunan)]
+
+
+def collect(folder, order=None):
     """({(ilk, son): dosya}, [numarasız kapaklar]) — en büyük dosya seçilir.
 
     Ad tek sayfa numarası veriyorsa yay olup olmadığına görselin en-boy oranı
     karar verir: adlar yıldan yıla değişiyor, oran değişmiyor."""
+    if order:                                  # .dir sırası varsa o kullanılır
+        kalan = [f for f in sorted(os.listdir(folder))
+                 if f.lower().endswith(('.jpg', '.jpeg', '.png'))
+                 and f not in set(order)]
+        seq = list(order) + kalan
+        kesin = {(i + 1, i + 1): os.path.join(folder, f) for i, f in enumerate(seq)}
+        return kesin, []
+
     best = {}
     prepend = []
     for f in sorted(os.listdir(folder)):
@@ -85,8 +141,8 @@ def collect(folder):
     return best, prepend
 
 
-def build(folder, pdf_path, log=print, cover=None):
-    picks, prepend = collect(folder)
+def build(folder, pdf_path, log=print, cover=None, blanks=False):
+    picks, prepend = collect(folder, dir_order(folder))
     prepend = [max(prepend, key=os.path.getsize)] if prepend else []   # tek kapak
     cover = None if prepend else cover        # klasörde kapak varsa dışarıkini alma
     if cover and not any(a <= 1 <= b for a, b in picks):
@@ -98,27 +154,19 @@ def build(folder, pdf_path, log=print, cover=None):
     covered = {p for a, b in keys for p in range(a, b + 1)}
     gaps = sorted(set(range(1, maxpage + 1)) - covered)
 
-    seq, size = [], None
-    for p in range(1, maxpage + 1):
-        hit = next(((a, b) for a, b in keys if a <= p <= b), None)
-        if hit is None or hit[0] != p:           # yayın ikinci yarısı: zaten eklendi
-            if hit is None:
-                seq.append(None)                 # eksik sayfa -> siyah
-            continue
-        seq.append(picks[hit])
-    # baştaki eksikleri at
-    while seq and seq[0] is None:
-        seq.pop(0)
-
-    files, blanked = list(prepend), 0
-    for item in seq:
-        if item is None:
-            if files or blanked:
-                files.append(None)
-                blanked += 1
-            continue
-        size = Image.open(item).size
-        files.append(item)
+    # Her görsel SIRAYLA bir kez girer. Aralıklar çakışabilir (ör. 010 hem
+    # "010_011" yayı hem tek sayfa olarak bulunabiliyor); sayfa tarayarak
+    # eşleştirmek çakışan görselleri sessizce düşürüyordu.
+    files, blanked, prev, size = list(prepend), 0, 1 if prepend else 0, None
+    for a, b in keys:
+        if blanks and files and a > prev + 1:
+            files.extend([None] * (a - prev - 1))    # delik -> siyah (opt-in)
+            blanked += a - prev - 1
+        path = picks[(a, b)]
+        if size is None:
+            size = Image.open(path).size
+        files.append(path)
+        prev = max(prev, b)
     if blanked:
         tmp = pdf_path + '.d'
         os.makedirs(tmp, exist_ok=True)
@@ -227,6 +275,9 @@ def main():
     ap.add_argument('--root', default='/Volumes/ATLAS 1/DVD2')
     ap.add_argument('--year', type=int, required=True)
     ap.add_argument('--out', default=os.path.expanduser('~/AtlasPDF'))
+    ap.add_argument('--blanks', action='store_true',
+                    help='numara atlamalarına siyah dolgu koy (varsayılan: koyma; '
+                         '2006+ DVD taramaları delikli, dolgu uydurma olur)')
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
 
@@ -243,7 +294,8 @@ def main():
         print(f'{name}:', flush=True)
         try:
             build(folder, os.path.join(args.out, name + '.pdf'),
-                  cover=find_cover(args.root, args.year, month))
+                  cover=find_cover(args.root, args.year, month),
+                  blanks=args.blanks)
         except Exception as e:
             print(f'  HATA: {e}')
 

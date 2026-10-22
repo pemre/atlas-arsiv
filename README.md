@@ -149,6 +149,37 @@ Sayfa numarası dosya adında yazılı:
 | `01_page006.jpg` | 6. sayfa (2007 düzeni) |
 | `KAPAK_ocak.jpg` | numarasız kapak → başa eklenir |
 
+**Sıra kaynağı `.dir`'dir (2008-2012).** Her sayının kendi `<ay>.dir` dosyası var;
+içindeki sıralı jpg adları Director cast sırası = uygulamanın gerçek sayfa sırası.
+`dir_order()` bunu okur, aynı çekirdeğe düşen kopyalardan büyüğünü seçer
+(`Ocak_014_015_L.jpg` ↔ `014_015.jpg`). Ad sıralamasına göre üretim 60 sayının
+45'inde `.dir`'den farklı çıkıyordu — 1-3 dosya (2/3/4 kopyaları, boşluklu adlar),
+biri 36 dosya. `.dir` görsel listesi içermeyen aylarda (2010-02, 2010-05, 2011-02,
+2011-05) ve `.dir`'i hiç olmayan 2006-2007'de ad sıralamasına düşülür — bu 28 sayı
+için "kesin" değil, aşağıdaki tabloya bak.
+
+### Neyi kesin biliyoruz, neyi bilmiyoruz
+
+| Dönem | Sayı | Sıra kaynağı | Kesinlik |
+|-------|------|--------------|----------|
+| 1993-2005 | 153 | `bts` içindeki `setPages`/`pageMask` dizisi | **kesin** — uygulamanın kendi sayfa dizisi |
+| 2008 (10 ay), 2009-2010 (22 ay), 2012 (12 ay) | 56 | `<ay>.dir` içindeki sıralı jpg adları (Director cast sırası) | **kesin** — uygulama sayfaları bu sırayla yüklüyor |
+| 2010-02, 2010-05, 2011-02, 2011-05 | 4 | dosya adı sırası | **kesin değil** — `.dir` var ama yalnız `<kayit><sayfa>` metin indeksi (39-51 kayıt); sayfa *numaralarını* doğruluyor, *sırayı* vermiyor |
+| 2006, 2007 | 24 | yalnız dosya adı sırası | **kesin değil** — aşağıdaki arama boş çıktı |
+
+2006/2007 için indeks arayışı: `atlas.exe`, `screensaver.exe`, `alPicView.ocx` dahil
+yıl klasöründeki **tüm görsel-dışı dosyalar** (exe/ocx/dll/u32/xmo/dat/ini) hem tam ad
+hem uzantısız ad için tarandı → **0 eşleşme**. `atlas.exe` içinde gömülü SWF/Director
+filmi de yok (`CWS` baytları tesadüfi: sürüm alanı 53/80, zlib patlıyor; `RIFX`,
+`FGDM`, `FGDC`, `agsa` hiç yok). `Dergi/Thumbs/<sayı>/` sayfa adlarının tam listesini
+veriyor (doğrulama için kullanıldı) ama sıra bilgisi taşımıyor.
+
+**Bilinen eksik sayfalar:** 2007-12 (sayı 177) — `Thumbs` klasöründe 4 yay var
+(`12_pages_48_49`, `12_pages_96_97`, `12_pages_98_99`, `12_pages_0118_0119`) ama
+`Images` klasöründe yok; DVD'ye konmamış, PDF'te o 4 sayfa eksik. 2006'nın 6 sayısında
+kapak yalnız `Thumbs`'ta (Images'ta yok) — kapak `images/kapaklar`'dan geldiği için
+PDF'te mevcut.
+
 **Yay tespiti ada değil görsele dayanır:** yay görselleri iki sayfa genişliğinde
 (en-boy oranı ~1,5), tek sayfa ~0,76. `is_spread()` oranı 1,2'nin üstündeyse iki
 sayfa sayar. Adlar yıldan yıla değişiyor (2009 ve 2012'de dosyalar tek sayfa,
@@ -168,7 +199,11 @@ Klasör düzeni de yıla göre değişir:
   (veya 2012'de `_kapaklar/Ocak_001.jpg`). Bazı sayılarda klasörün içinde iki
   kapak dosyası bulunur (`KAPAK_Ocak.jpg` + `AT_202_KAPAK.jpg`) — en büyüğü
   seçilir, kapak PDF'e **bir kez** girer.
-- **Eksik sayfa** = numara atlaması → siyah dolgu (DVD'ye konmamış reklam sayfası).
+- **Eksik sayfa = numara atlaması, ama varsayılan olarak DOLDURULMAZ.** 2006 sonrası
+  DVD'ler delikli tarama: bir sayıda 84 görselin karşılığı 141 basılı sayfa çıkıyor,
+  yani sayfaların ~%40'ı hiç taranmamış (çoğu yayın yalnız sol yarısı var). Oraya siyah
+  basmak dergiyi olduğundan farklı gösterir; bu yüzden görseller sırayla konur.
+  Gerçekten dolgu istiyorsan `--blanks` ver.
 - **Yay görselleri bölünmez**, tek geniş sayfa olarak girer.
 
 ### `.dir` indeksi ile doğrulama
