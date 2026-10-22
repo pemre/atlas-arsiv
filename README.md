@@ -167,11 +167,18 @@ için "kesin" değil, aşağıdaki tabloya bak.
 | 2010-02, 2010-05, 2011-02, 2011-05 | 4 | dosya adı sırası | **kesin değil** — `.dir` var ama yalnız `<kayit><sayfa>` metin indeksi (39-51 kayıt); sayfa *numaralarını* doğruluyor, *sırayı* vermiyor |
 | 2006, 2007 | 24 | yalnız dosya adı sırası | **kesin değil** — aşağıdaki arama boş çıktı |
 
-2006/2007 için indeks arayışı: `atlas.exe`, `screensaver.exe`, `alPicView.ocx` dahil
-yıl klasöründeki **tüm görsel-dışı dosyalar** (exe/ocx/dll/u32/xmo/dat/ini) hem tam ad
-hem uzantısız ad için tarandı → **0 eşleşme**. `atlas.exe` içinde gömülü SWF/Director
-filmi de yok (`CWS` baytları tesadüfi: sürüm alanı 53/80, zlib patlıyor; `RIFX`,
-`FGDM`, `FGDC`, `agsa` hiç yok). `Dergi/Thumbs/<sayı>/` sayfa adlarının tam listesini
+2006/2007 için indeks arayışı (sonuç: **indeks yok, array yok**):
+
+- `atlas.exe`, `screensaver.exe`, `alPicView.ocx` dahil yıl klasöründeki tüm görsel-dışı
+  dosyalar (exe/ocx/dll/u32/xmo/dat/ini) hem tam ad hem uzantısız ad için tarandı → **0 eşleşme**.
+- SWF taraması: dosya başından değil **her ofsetten** `FWS`/`CWS`/`ZWS` imzası arandı ve
+  adaylar doğrulandı (sürüm 1-60, uzunluk makul, CWS'te `0x78` zlib başlığı) → **geçerli aday 0**.
+- `atlas.exe`'nin son 13 MB'ı PE dışında bir **paketli katman**: başlık `PCRS` +
+  `0xAFBCADAC`, içinde Lua bytecode ve bitmap chunk'ları var; Director movie 4CC'si
+  (`RIFX`/`XFIR`/`CASt`/`Lscr`/`VWSC`) veya düz metin dosya adı **yok**, string'ler gizlenmiş.
+- Belirleyici bulgu: exe `FindFirstFile` çağırıyor — sayfa listesini **çalışma anında
+  klasörden** okuyor. Yani saklanmış bir sayfa dizisi yok; sıra = klasör listeleme sırası
+  = alfabetik, ki adlar sayfa numarasını taşıdığı için numara sırasıyla aynı. `Dergi/Thumbs/<sayı>/` sayfa adlarının tam listesini
 veriyor — yalnız **hangi adlar var** sorusu için kullanıldı, sıra için değil. Thumbs
 damgaları sayfa numarasıyla artıyor (2006/154'te 70/73, 2007/166'da 68/70 çift artan)
 ama bu **kanıt sayılmaz**: küçük resimleri üreten araç klasörü alfabetik listeliyorsa
