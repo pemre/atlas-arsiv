@@ -288,6 +288,10 @@ dizilidir. `dir_order()` bu önekleri sırayla okur ve klasördeki karşılığ�
 → eşleşme ilk üç rakam üzerinden. `.dir` klasörün yarısından azını kapsıyorsa ad sırasına
 dönülür.
 
+`.dir` içindeki ad aranırken ayırıcı (`_` / `-`) şart: 2011 `.dir`'lerinde geçen `2011.jpg`
+arayüz görseli sayfa sanılıyordu ve o iki sayı (2011-02, 2011-05) sessizce ad sırasına
+düşüyordu. Düzeltildi — ikisinde de sıra zaten ad sırasıyla aynı çıktı (sayfa sayısı değişmedi).
+
 48 sayının (2009-2012) hepsi için `.dir` sırası ile ad sırası kıyaslandı: **47'sinde aynı**;
 tek gerçek fark **2010-02**: `.dir` sırası 022/024/026'yı sonraya atıyor, ad sırası başta
 tutuyordu → sayı `.dir` sırasıyla yeniden üretildi (**61 → 62 sayfa**). Kalan 3 "belirsiz"

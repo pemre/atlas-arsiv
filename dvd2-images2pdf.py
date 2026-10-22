@@ -88,8 +88,9 @@ def dir_order(folder):
     if not d:
         return None
     ham = P(d[0]).read_bytes()
+    # ayırıcı (_ ya da -) şart: '2011.jpg' gibi arayüz görselleri sayfa sanılmasın
     adlar = [m.group(0).decode() for m in
-             re.finditer(rb'[0-9]{3}[_0-9a-z]{0,20}\.jpg', ham, re.I)]
+             re.finditer(rb'[0-9]{3}[_\-][^\s/:*?"<>|]{0,30}\.jpg', ham, re.I)]
     if adlar:
         sira = list(dict.fromkeys(_cekirdek(a) for a in adlar))    # sıra korunur
     else:
