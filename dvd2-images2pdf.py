@@ -107,6 +107,15 @@ def dir_order(folder):
     return bulunan + [f for f in sorted(hepsi) if f not in set(bulunan)]
 
 
+def _ayni(a, b, n=1 << 20):
+    """İlk 1 MB aynıysa aynı dosya say (kopya adları ayıklamak için)."""
+    try:
+        with open(a, 'rb') as fa, open(b, 'rb') as fb:
+            return fa.read(n) == fb.read(n)
+    except OSError:
+        return False
+
+
 def collect(folder, order=None):
     """({(ilk, son): dosya}, [numarasız kapaklar]) — en büyük dosya seçilir.
 
@@ -117,7 +126,7 @@ def collect(folder, order=None):
                  if f.lower().endswith(('.jpg', '.jpeg', '.png'))
                  and f not in set(order)]
         seq = list(order) + kalan
-        kesin = {(i + 1, i + 1): os.path.join(folder, f) for i, f in enumerate(seq)}
+        kesin = {(i + 1, i + 1): [os.path.join(folder, f)] for i, f in enumerate(seq)}
         return kesin, []
 
     best = {}
@@ -125,19 +134,27 @@ def collect(folder, order=None):
     for f in sorted(os.listdir(folder)):
         if not f.lower().endswith(('.jpg', '.jpeg', '.png')):
             continue
-        pn = page_numbers(f)
-        if not pn:
-            if 'kapak' in f.lower() or 'cover' in f.lower():
-                prepend.append(os.path.join(folder, f))   # numarasız kapak
-            continue
         path = os.path.join(folder, f)
         if not os.path.exists(path):          # ISO'da boş klasör kaydı olabilir
+            continue
+        # kapak adı taşıyan dosya sayfa değildir: 06_kapak.jpg'yi 6. sayfa sanmak
+        # gerçek 6. sayfayı PDF'ten siliyordu
+        if 'kapak' in f.lower() or 'cover' in f.lower():
+            prepend.append(path)
+            continue
+        pn = page_numbers(f)
+        if not pn:
             continue
         a, b = pn
         if b == a and is_spread(path):         # tek numara ama görsel yay
             pn = (a, a + 1)
-        if pn not in best or os.path.getsize(path) > os.path.getsize(best[pn]):
-            best[pn] = path
+        # aynı sayfa anahtarına düşen dosyalar farklı içerik olabilir
+        # (2006-01'de ocak08._panorama.jpg ile ocak08_panorama.jpg iki ayrı sayfa);
+        # yalnız BİREBİR aynı dosya atılır, gerisi ad sırasıyla korunur
+        liste = best.setdefault(pn, [])
+        if any(os.path.getsize(path) == os.path.getsize(x) and _ayni(path, x) for x in liste):
+            continue
+        liste.append(path)
     return best, prepend
 
 
@@ -146,7 +163,7 @@ def build(folder, pdf_path, log=print, cover=None, blanks=False):
     prepend = [max(prepend, key=os.path.getsize)] if prepend else []   # tek kapak
     cover = None if prepend else cover        # klasörde kapak varsa dışarıkini alma
     if cover and not any(a <= 1 <= b for a, b in picks):
-        picks[(1, 1)] = cover                 # kapak ayrı klasörde
+        picks.setdefault((1, 1), []).append(cover)    # kapak ayrı klasörde
     if not picks:
         raise ValueError('sayfa görseli bulunamadı: ' + folder)
     keys = sorted(picks)
@@ -162,10 +179,10 @@ def build(folder, pdf_path, log=print, cover=None, blanks=False):
         if blanks and files and a > prev + 1:
             files.extend([None] * (a - prev - 1))    # delik -> siyah (opt-in)
             blanked += a - prev - 1
-        path = picks[(a, b)]
-        if size is None:
-            size = Image.open(path).size
-        files.append(path)
+        for path in picks[(a, b)]:
+            if size is None:
+                size = Image.open(path).size
+            files.append(path)
         prev = max(prev, b)
     if blanked:
         tmp = pdf_path + '.d'
@@ -180,9 +197,10 @@ def build(folder, pdf_path, log=print, cover=None, blanks=False):
                 out.append(f)
         files = out
     A.write_pdf(files, pdf_path)
-    log(f'  {len(picks)} görsel -> {len(files)} sayfa ({blanked} dolgu), '
+    n_gorsel = sum(len(v) for v in picks.values())
+    log(f'  {n_gorsel} görsel -> {len(files)} sayfa ({blanked} dolgu), '
         f'{os.path.getsize(pdf_path) / 1e6:.1f} MB')
-    return dict(images=len(picks), pages=len(files), blanks=blanked, gaps=gaps)
+    return dict(images=n_gorsel, pages=len(files), blanks=blanked, gaps=gaps)
 
 
 def month_of(folder_name):

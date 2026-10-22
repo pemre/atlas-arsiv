@@ -5,6 +5,7 @@ SWF gerektirmeyen mantığı doğrular: sayı numaralandırma, siyah bar tespiti
 harita dilimi birleştirme (örtüşme bulma) ve PDF yazımı.
 """
 import os
+import shutil
 import tempfile
 
 from PIL import Image, ImageDraw
@@ -121,6 +122,26 @@ def test_dvd2_page_numbers():
         Image.new('RGB', (80, 107), (7, 8, 9)).save(os.path.join(d, '012_ocak.jpg'))
         st = d2.build(d, os.path.join(d, 'c.pdf'))
         assert st['images'] == 3 and st['pages'] == 3, st
+
+    # aynı sayfa numaralı iki FARKLI dosya ikisi de girer
+    # (2006-01: ocak08._panorama.jpg + ocak08_panorama.jpg = iki ayrı sayfa)
+    with tempfile.TemporaryDirectory() as d:
+        Image.new('RGB', (80, 107), (11, 22, 33)).save(os.path.join(d, 'ocak08._panorama.jpg'))
+        Image.new('RGB', (80, 107), (44, 55, 66)).save(os.path.join(d, 'ocak08_panorama.jpg'))
+        st = d2.build(d, os.path.join(d, 'd.pdf'))
+        assert st['images'] == 2 and st['pages'] == 2, st
+        # birebir kopya ise tek sayfa kalır
+        shutil.copy(os.path.join(d, 'ocak08_panorama.jpg'), os.path.join(d, 'ocak08_panorama_kopya.jpg'))
+        st = d2.build(d, os.path.join(d, 'e.pdf'))
+        assert st['images'] == 2, st
+
+    # kapak adı taşıyan dosya SAYFA değildir: 06_kapak.jpg'yi 6. sayfa sanmak
+    # gerçek 6. sayfayı PDF'ten siliyordu
+    with tempfile.TemporaryDirectory() as d:
+        Image.new('RGB', (80, 107), (9, 9, 9)).save(os.path.join(d, '06_kapak.jpg'))
+        Image.new('RGB', (80, 107), (200, 100, 50)).save(os.path.join(d, '06_pages 006.jpg'))
+        st = d2.build(d, os.path.join(d, 'f.pdf'))
+        assert st['pages'] == 2, st          # kapak + sayfa 6
 
 
 if __name__ == '__main__':

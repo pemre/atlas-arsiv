@@ -133,10 +133,10 @@ Korunuyor. SWF'in içindeki veri JPEG'dir (`DCTDecode`). `swfextract` bu sıkı�
 DVD'de bu var: aynı sayfa 800×1067 (yüksek) ve 495×660 (düşük) olarak iki kez gömülü. Daha yüksek çözünürlük DVD'de yok — basılı dergiyi yeniden taramadan elde edilemez.
 
 **Ne kadar sürer, ne kadar yer kaplar?**
-Mac'te sayı başına ~10 saniye (2006 sonrası JPG'lerde ~30 saniye). Tam arşiv: 237 PDF, 25.584 sayfa, **7,97 GB** (sayı başına 25-40 MB). JPEG'leri de saklarsan iki katı.
+Mac'te sayı başına ~10 saniye (2006 sonrası JPG'lerde ~30 saniye). Tam arşiv: 237 PDF, 25.614 sayfa, **7,4 GB** (sayı başına 25-40 MB). JPEG'leri de saklarsan iki katı.
 
 **Hangi DVD'lerle test edildi?**
-`Atlas_Dergisi_1993-2002_DVD1.iso` (117 sayı) ve `Atlas_Dergisi_2003-2012_DVD2.iso` — toplam **237 sayı** (1993-04 → 2012-12), 25.584 sayfa, 7,97 GB. DVD1'de 1993-2005 Flash `.bts` dosyaları (153 sayı), DVD2'de 2003-2005'in devamı + 2006-2012 JPG klasörleri (84 sayı) var.
+`Atlas_Dergisi_1993-2002_DVD1.iso` (117 sayı) ve `Atlas_Dergisi_2003-2012_DVD2.iso` — toplam **237 sayı** (1993-04 → 2012-12), 25.614 sayfa, 7,4 GB. DVD1'de 1993-2005 Flash `.bts` dosyaları (153 sayı), DVD2'de 2003-2005'in devamı + 2006-2012 JPG klasörleri (84 sayı) var.
 
 **Bir sayıda hata alırsam?**
 Toplu çevirim tek sayı patlarsa durmaz, hatayı yazıp devam eder ve sonunda listeler.
@@ -243,6 +243,15 @@ düşer ve PDF **1 sayfa** çıkar (2007'nin 12 sayısı baştan böyle bozuldu)
 
 ### Kapak kuralı
 
+**Kapak adı taşıyan dosya asla sayfa değildir.** `06_kapak.jpg`, `11_kapak.jpg` gibi adlar
+sayfa numarası gibi okunup 6./11. sayfayı PDF'ten siliyordu; artık ada `kapak`/`cover`
+geçiyorsa dosya kapak adayı sayılır.
+
+**Aynı sayfa numarasına düşen iki dosya varsa ikisi de girer.** `ocak08._panorama.jpg` ile
+`ocak08_panorama.jpg` aynı numarayı taşır ama iki ayrı sayfadır ("Tüm Sayılar Tüm Haritalar"
+ile "Yüksekten Görmek"); eskiden büyük olan kazanıp diğeri düşüyordu. Yalnız birebir aynı
+dosya (ilk 1 MB aynı) elenir.
+
 Kapak çoğu zaman sayfa klasöründe değil: `images/kapaklar/01_ocak.jpg` (2012'de
 `_kapaklar/Ocak_001.jpg`). Klasörün içinde iki kapak adayı olabilir
 (`KAPAK_Ocak.jpg` + `AT_202_KAPAK.jpg`) — **en büyüğü** seçilir ve kapak PDF'e **bir kez**
@@ -253,11 +262,28 @@ kapak oluyor).
 
 | Yer | Ne | Durum |
 |-----|-----|-------|
-| 2007-05 (sayı 170) | 58 düz + **43 `05arka_page_*`** = aynı sayı numaralı **ikinci bir dizgi**. Folyolar dosya adıyla birebir (`arka_page_008` → "8", `arka_page_068_069` → 68/69), ama **içerik başka**: 8. sayfa iki farklı "içindekiler". `Thumbs` de 43 dosyayı içeriyor, yani diskte gerçekten iki versiyon var | **karar verilemez** — hangisinin basıldığı diskten anlaşılmıyor. PDF'te düz aile var (58 sayfa). Basılı sayıyla tek sayfa kıyaslanırsa çözülür. Diğer 23 sayıda bu aile yok |
+| 2007-05 (sayı 170) | 58 düz + **43 `05arka_page_*`** = aynı sayı numaralı ikinci bir dizgi. Folyolar dosya adıyla birebir (`arka_page_008` → "8", `arka_page_068_069` → 68/69), içerik başka: 8. sayfa iki farklı "içindekiler". `Thumbs` de 43 dosyayı içeriyor | **kapandı** — uygulama klasörde ne varsa gösteriyor, ikisi de gerçek sayfa; PDF 100 sayfa (eskiden 79'du). Diğer 23 sayıda bu aile yok |
 | 2006-01 (154) | `ocak08._panorama.jpg`, `ocak08_panorama.jpg`'nın yazım hatası ikizi (fazladan nokta) | kapalı — büyük olan seçildi |
 | 2007-12 (177) | `Thumbs`'ta 4 yay var (`12_pages_48_49`, `96_97`, `98_99`, `0118_0119`), `Images`'ta yok | **açık** — DVD'ye konmamış, PDF'te 4 sayfa eksik |
 | 2006'da 6 sayı | kapak yalnız `Thumbs`'ta, `Images`'ta yok | kapalı — kapak `images/kapaklar`'dan geldi |
 | 2010-02 (203) | 64 ada karşı 62 gerçek dosya (2 hayalet kayıt) + 2 varyant | kapalı — 1 kapak + 60 görsel = 61 sayfa |
+
+### Uygulamayla doğrulama (sayı 154, 2006-01)
+
+DVD'deki Authorware uygulaması CrossOver'da çalıştırıldı ve ilk 12 sayfa bizim PDF'le yan
+yana kıyaslandı: **10 satır birebir**, kalan 2 satır aynı iki sayfanın kendi arasında yer
+değiştirmesi (uygulama klasör görünümünü listeliyor, biz sayfa numarasını esas alıyoruz).
+Sayfa sayısı ikisinde de **74**.
+
+Çalıştırmak için gerekenler (Türkçe Windows XP şişesi): `msvbvm60.dll` + `asycfilt.dll` +
+`stdole2.tlb` sistem32'ye, sonra `regsvr32 C:\2006\alPicView.ocx`. CrossOver'ın `wine`'ı
+`WINEPREFIX`'i yok sayar, şişe `--bottle "Win XP 32-bit"` ile verilir.
+Uygulama açılışta "Unable to load movie mover driver for .dir" diyebilir — **Continue**
+de, çalışmaya devam ediyor.
+
+Bu test iki hatayı ortaya çıkardı (yukarıdaki kapak ve ikiz kuralları) ve arşivde 10 sayı
+yeniden üretildi (2006-01, 2006-02, 2006-10, 2007-02, 2007-04, 2007-05, 2007-06, 2007-08,
+2007-10, 2007-12).
 
 ### Siyah dolgu: 2006 sonrası varsayılan KAPALI
 
