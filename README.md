@@ -243,9 +243,16 @@ düşer ve PDF **1 sayfa** çıkar (2007'nin 12 sayısı baştan böyle bozuldu)
 
 ### Kapak kuralı
 
-**Kapak adı taşıyan dosya asla sayfa değildir.** `06_kapak.jpg`, `11_kapak.jpg` gibi adlar
-sayfa numarası gibi okunup 6./11. sayfayı PDF'ten siliyordu; artık ada `kapak`/`cover`
-geçiyorsa dosya kapak adayı sayılır.
+**Kapak: yalnız ön kapak başa alınır.** `06_kapak.jpg`, `11_kapak.jpg` gibi adlar sayfa
+numarası gibi okunup 6./11. sayfayı PDF'ten siliyordu. Şimdi `kapak`/`cover` geçen dosya
+sayfa sayılmıyor; ama başa alınması için numarasız ya da **1. sayfa** olması şart. Numaralı
+kapaklar (arka kapak, ör. `ekim_109_kapak.jpg`) kendi yerinde kalır — hepsini başa almak
+arka kapağı 2. sayfaya taşıyordu.
+
+**Katlanır sayfa (`katlama`) sessizce düşmemeli.** `temmuz_katlama_1_kelkit.jpg` gibi
+dosyalarda sayfa numarası yok; eskiden hiç PDF'e girmiyordu. Numarası okunamayan katlama
+dosyaları `KATLAMA_YER` tablosundaki aralığa konur (bugün tek kayıt: 2006-07 → 54-55,
+uygulamada göründüğü yer), tabloda yoksa sona eklenir ve uyarı verir.
 
 **Aynı sayfa numarasına düşen iki dosya varsa ikisi de girer.** `ocak08._panorama.jpg` ile
 `ocak08_panorama.jpg` aynı numarayı taşır ama iki ayrı sayfadır ("Tüm Sayılar Tüm Haritalar"
@@ -268,12 +275,24 @@ kapak oluyor).
 | 2006'da 6 sayı | kapak yalnız `Thumbs`'ta, `Images`'ta yok | kapalı — kapak `images/kapaklar`'dan geldi |
 | 2010-02 (203) | 64 ada karşı 62 gerçek dosya (2 hayalet kayıt) + 2 varyant | kapalı — 1 kapak + 60 görsel = 61 sayfa |
 
-### Uygulamayla doğrulama (sayı 154, 2006-01)
+### Uygulamayla doğrulama (2006, 12 sayının tamamı)
 
-DVD'deki Authorware uygulaması CrossOver'da çalıştırıldı ve ilk 12 sayfa bizim PDF'le yan
-yana kıyaslandı: **10 satır birebir**, kalan 2 satır aynı iki sayfanın kendi arasında yer
-değiştirmesi (uygulama klasör görünümünü listeliyor, biz sayfa numarasını esas alıyoruz).
-Sayfa sayısı ikisinde de **74**.
+DVD'deki Authorware uygulaması CrossOver'da çalıştırıldı; her sayı açılıp **bütün sayfalar**
+tek tek yakalandı ve ekran karesi bizim sıradaki karşılığıyla görsel olarak eşleştirildi
+(24×24 normalize gri vektör, kosinüs benzerliği ≥ 0,80; kapak karesi kıyas dışı). Kural:
+uygulamada k. kare, bizim k. sayfamızı göstermeli.
+
+Sonuç: **10 sayıda sıra birebir.** İki fark bulundu, ikisi de düzeltildi:
+
+- **160 (2006-07):** uygulama 3 sayfa fazla gösteriyordu — kapak + iki **katlanır sayfa**
+  (`temmuz_katlama_1_kelkit.jpg`, `_2_`). Katlama dosyaları sayfa numarası taşımıyor ve
+  sessizce düşüyordu; artık 53-54 yayından sonra giriyorlar → **75 değil 77 sayfa**.
+- **163 (2006-10):** **arka kapak** (`ekim_109_kapak.jpg`) adında "kapak" geçtiği için ön
+  kapak sanılıp başa alınmıştı, 2. sayfaya taşınmıştı. Artık kendi numarasında (son sayfa).
+
+Kapak uyarısı: 160 ve 164'ün kapağı DVD'de **yalnız `Thumbs/` içinde 517×690 küçük resim**
+olarak var (`temmuz_KAPAK.jpg`, `kasim_109_kapak.jpg`); `Images/` klasöründe tam boy kopyası
+yok. Bu yüzden 164'ün PDF'i içindekilerle başlıyor.
 
 Çalıştırmak için gerekenler (Türkçe Windows XP şişesi): `msvbvm60.dll` + `asycfilt.dll` +
 `stdole2.tlb` sistem32'ye, sonra `regsvr32 C:\2006\alPicView.ocx`. CrossOver'ın `wine`'ı

@@ -116,6 +116,15 @@ def _ayni(a, b, n=1 << 20):
         return False
 
 
+# Altında sayfa numarası olmayan katlanır sayfalar: uygulamada göründükleri aralık.
+# (2006-07'de iki katlama, 53-54 yayından sonra, 55-56'dan önce.)
+KATLAMA_YER = {
+    'temmuz_katlama_1_kelkit.jpg': (54, 55),
+    'temmuz_katlama_2_kelkit.jpg': (54, 55),
+}
+log_uyari = []
+
+
 def collect(folder, order=None):
     """({(ilk, son): dosya}, [numarasız kapaklar]) — en büyük dosya seçilir.
 
@@ -137,13 +146,26 @@ def collect(folder, order=None):
         path = os.path.join(folder, f)
         if not os.path.exists(path):          # ISO'da boş klasör kaydı olabilir
             continue
-        # kapak adı taşıyan dosya sayfa değildir: 06_kapak.jpg'yi 6. sayfa sanmak
-        # gerçek 6. sayfayı PDF'ten siliyordu
-        if 'kapak' in f.lower() or 'cover' in f.lower():
-            prepend.append(path)
-            continue
         pn = page_numbers(f)
+        # kapak: yalnız ön kapak başa alınır (numarasız ya da 1. sayfa).
+        # Arka kapak (ör. ekim_109_kapak.jpg) kendi sayfa numarasında kalır —
+        # hepsini başa almak arka kapağı 2. sayfaya taşıyordu.
+        if 'kapak' in f.lower() or 'cover' in f.lower():
+            if pn is None or pn[0] <= 1:
+                prepend.append(path)
+                continue
+            a, b = pn
+            best.setdefault((a, b), []).append(path)
+            continue
         if not pn:
+            # katlanır sayfa (ör. temmuz_katlama_1_kelkit.jpg) numara taşımıyor;
+            # uygulamada 53-54 yayından sonra görünüyor → o aralığa yerleştirilir
+            if 'katlama' in f.lower():
+                anahtar = KATLAMA_YER.get(f)
+                if anahtar is None:
+                    log_uyari.append(f)
+                    anahtar = (999, 999)
+                best.setdefault(anahtar, []).append(path)
             continue
         a, b = pn
         if b == a and is_spread(path):         # tek numara ama görsel yay
