@@ -28,35 +28,48 @@ MONTHS = ['ocak', 'subat', 'mart', 'nisan', 'mayis', 'haziran',
 LEAD = re.compile(r'^[\s_.\-]*(\d{1,3})(?:[\s_.\-]*(\d{1,3}))?')
 
 
-def page_numbers(filename, pair_single=False):
-    """Dosya adından (ilk sayfa, son sayfa) çıkar.
+PAGE = re.compile(r'(?:page|sayfa|safya)[\s_.\-]*(\d{1,3})(?:[\s_.\-]*(\d{1,3}))?')
 
-    pair_single=True: tek numaralı ad da bir YAY (2 sayfa). 2008'den sonraki
-    klasörlerde her dosya basılı derginin bir yayıdır (sol sayfa numarası yazılı)."""
+
+def page_numbers(filename):
+    """Dosya adından (ilk sayfa, son sayfa) çıkar; yay mı tek sayfa mı sonra belli olur.
+
+    Adlandırma yıldan yıla değişiyor, ikisi de desteklenir:
+        01_page012_013.jpg -> 12, 13      004_ocak.jpg -> 4
+        ocak04_05panorama.jpg -> 4, 5     Ocak_22_23.jpg -> 22, 23
+    """
     s = os.path.splitext(filename)[0].lower()
     for m in MONTHS:
         s = s.replace(m, ' ')
     s = re.sub(r'(19|20)\d{2}', ' ', s)          # yıl eki: ocak2011 -> ocak
-    m = LEAD.match(s)
+    m = PAGE.search(s) or LEAD.match(s)
     if not m:
         return None
     a = int(m.group(1))
     b = int(m.group(2)) if m.group(2) else a
-    if b != a and b != a + 1:                    # sayı çifti değil (başlıktaki sayı)
+    if b != a and b != a + 1:                    # çift değil (başlıktaki sayı)
         b = a
-    if pair_single and b == a:
-        b = a + 1                                # tek numara = yay
     return (a, b) if a >= 1 else None
 
 
-def collect(folder, pair_single=False):
-    """({(ilk, son): dosya}, [numarasız kapaklar]) — en büyük dosya seçilir."""
+def is_spread(path, threshold=1.2):
+    """Yay görselleri iki sayfa genişliğinde (oran ~1.5), tek sayfa ~0.76."""
+    with Image.open(path) as im:
+        w, h = im.size
+    return w / h > threshold
+
+
+def collect(folder):
+    """({(ilk, son): dosya}, [numarasız kapaklar]) — en büyük dosya seçilir.
+
+    Ad tek sayfa numarası veriyorsa yay olup olmadığına görselin en-boy oranı
+    karar verir: adlar yıldan yıla değişiyor, oran değişmiyor."""
     best = {}
     prepend = []
     for f in sorted(os.listdir(folder)):
         if not f.lower().endswith(('.jpg', '.jpeg', '.png')):
             continue
-        pn = page_numbers(f, pair_single)
+        pn = page_numbers(f)
         if not pn:
             if 'kapak' in f.lower() or 'cover' in f.lower():
                 prepend.append(os.path.join(folder, f))   # numarasız kapak
@@ -64,13 +77,16 @@ def collect(folder, pair_single=False):
         path = os.path.join(folder, f)
         if not os.path.exists(path):          # ISO'da boş klasör kaydı olabilir
             continue
+        a, b = pn
+        if b == a and is_spread(path):         # tek numara ama görsel yay
+            pn = (a, a + 1)
         if pn not in best or os.path.getsize(path) > os.path.getsize(best[pn]):
             best[pn] = path
     return best, prepend
 
 
-def build(folder, pdf_path, log=print, pair_single=False, cover=None):
-    picks, prepend = collect(folder, pair_single)
+def build(folder, pdf_path, log=print, cover=None):
+    picks, prepend = collect(folder)
     prepend = [max(prepend, key=os.path.getsize)] if prepend else []   # tek kapak
     cover = None if prepend else cover        # klasörde kapak varsa dışarıkini alma
     if cover and not any(a <= 1 <= b for a, b in picks):
@@ -227,7 +243,6 @@ def main():
         print(f'{name}:', flush=True)
         try:
             build(folder, os.path.join(args.out, name + '.pdf'),
-                  pair_single=args.year >= 2008,
                   cover=find_cover(args.root, args.year, month))
         except Exception as e:
             print(f'  HATA: {e}')

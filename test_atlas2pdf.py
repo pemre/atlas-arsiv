@@ -83,24 +83,34 @@ def test_dvd2_page_numbers():
     d2 = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(d2)
 
-    # 2006-07: tek numaralı dosya TEK sayfa
+    # tek numara = tek sayfa (yay olup olmadığına görselin oranı karar verir)
     assert d2.page_numbers('ocak08_panorama.jpg') == (8, 8)
+    assert d2.page_numbers('004_ocak.jpg') == (4, 4)
+    assert d2.page_numbers('006_ocak2011.jpg') == (6, 6)      # yıl eki sayılmaz
+    # çift numara = yay
     assert d2.page_numbers('ocak11_12_panorama.jpg') == (11, 12)
     assert d2.page_numbers('Ocak_22_23_aylayasam.jpg') == (22, 23)
-    # 2008+: tek numaralı dosya bir YAY (2 sayfa); yıl eki sayılmaz
-    assert d2.page_numbers('004_ocak.jpg', True) == (4, 5)
-    assert d2.page_numbers('010_011_ocak.jpg', True) == (10, 11)
-    assert d2.page_numbers('006_ocak2011.jpg', True) == (6, 7)
+    # 2007 düzeni
+    assert d2.page_numbers('01_page012_013.jpg') == (12, 13)
+    assert d2.page_numbers('01_page006.jpg') == (6, 6)
     assert d2.page_numbers('KAPAK_Ocak.jpg') is None
 
     with tempfile.TemporaryDirectory() as d:
+        portrait = os.path.join(d, '002_ocak.jpg')
+        Image.new('RGB', (80, 107), (200, 0, 0)).save(portrait)
+        wide = os.path.join(d, '004_ocak.jpg')
+        Image.new('RGB', (160, 107), (0, 200, 0)).save(wide)
+        assert not d2.is_spread(portrait) and d2.is_spread(wide)
+
         Image.new('RGB', (80, 107), (10, 10, 10)).save(os.path.join(d, 'KAPAK_ocak.jpg'))
-        Image.new('RGB', (160, 214), (20, 20, 20)).save(os.path.join(d, 'AT_202_KAPAK.jpg'))
-        Image.new('RGB', (80, 107), (200, 0, 0)).save(os.path.join(d, '002_003_ocak.jpg'))
-        cover = os.path.join(d, 'dis_kapak.jpg')
-        Image.new('RGB', (80, 107), (0, 0, 200)).save(cover)
-        st = d2.build(d, os.path.join(d, 'a.pdf'), pair_single=True, cover=cover)
-        assert st['pages'] == 2, st        # 1 kapak + 1 yay — kapak üçlenmemeli
+        Image.new('RGB', (160, 214), (20, 20, 20)).save(os.path.join(d, 'AT_203_KAPAK.jpg'))
+        dis = os.path.join(d, 'dis_kapak.jpg')
+        Image.new('RGB', (80, 107), (0, 0, 200)).save(dis)
+        picks, prepend = d2.collect(d)
+        assert len(prepend) == 3       # KAPAK_ocak + AT_203_KAPAK + dis_kapak
+        st = d2.build(d, os.path.join(d, 'a.pdf'), cover=dis)
+        # kapak(1) + sayfa2 + dolgu(3) + yay(4-5); kapak üçlenseydi 6 olurdu
+        assert st['pages'] == 4, st
 
 
 if __name__ == '__main__':

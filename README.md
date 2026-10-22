@@ -140,12 +140,19 @@ Toplu çevirim tek sayı patlarsa durmaz, hatayı yazıp devam eder ve sonunda l
 Macromedia Director sunucusudur, sayfaları gömmez — sıra bilgisi dosya adlarında
 ve `.dir` içindeki arama indeksinde.
 
-Sayfa numarası dosya adında yazılı, iki kural var:
+Sayfa numarası dosya adında yazılı:
 
-| Dönem | Kural | Örnek |
-|-------|-------|-------|
-| 2006-2007 | tek numara = tek sayfa | `ocak08_panorama.jpg` → 8 |
-| 2008 sonrası | her dosya bir **yay** (2 sayfa) | `004_ocak.jpg` → 4-5 |
+| Ad | Anlam |
+|----|-------|
+| `ocak08_panorama.jpg`, `004_ocak.jpg` | 8. / 4. sayfa — yay mı, orana bakılır |
+| `ocak11_12_panorama.jpg`, `01_page012_013.jpg` | 11-12 / 12-13 **yayı** |
+| `01_page006.jpg` | 6. sayfa (2007 düzeni) |
+| `KAPAK_ocak.jpg` | numarasız kapak → başa eklenir |
+
+**Yay tespiti ada değil görsele dayanır:** yay görselleri iki sayfa genişliğinde
+(en-boy oranı ~1,5), tek sayfa ~0,76. `is_spread()` oranı 1,2'nin üstündeyse iki
+sayfa sayar. Adlar yıldan yıla değişiyor (2009 ve 2012'de dosyalar tek sayfa,
+2008'de karışık), oran değişmiyor.
 
 Klasör düzeni de yıla göre değişir:
 
