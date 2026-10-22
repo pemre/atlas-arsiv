@@ -141,7 +141,10 @@ def shape_bitmaps(swf):
 def first_bitmap(sid, sprites, uses, images, depth=0):
     for c in sprites.get(sid, []):
         if c in uses:
-            for u in uses[c]:
+            # Shape'in bitmap listesinde alfa taşıyan JPEG3 (ör. kapak üstündeki logo)
+            # önce gelirse sayfa sanılıyor ve swfextract JPEG2'yi bulamayınca o sayfa
+            # düşük çözünürlüklü ikizine düşüyor. Önce alfasız JPEG2 (tag 21) denenir.
+            for u in sorted(uses[c], key=lambda u: 0 if images.get(u) == 21 else 1):
                 if u in images:
                     return u
         elif c in sprites and depth < 5:

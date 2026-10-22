@@ -127,7 +127,14 @@ Dilimler PDF'te de aynen durur (dergideki sıralarıyla), poster sadece ek dosya
 ## SSS
 
 **Orijinal dosyalar korunuyor mu, yoksa yeniden mi sıkıştırılıyor?**
-Korunuyor. SWF'in içindeki veri JPEG'dir (`DCTDecode`). `swfextract` bu sıkıştırılmış veriyi olduğu gibi alır, sadece dosyanın geçerli bir JPEG olması için paylaşılan `JPEGTables`'ı (nicemleme/Huffman tabloları) başına ekler. PDF de bu JPEG'i **yeniden sıkıştırmadan** gömer. Yani PDF'teki görüntü, DVD'deki bit akışının aynısıdır — tek bir nesil kayıp yok.
+Korunuyor — **tek istisna kapak**: kapağın üstünde alfalı bir logo (ör. `ATLAS` yazısı) varsa
+shape'in bitmap listesinde alfalı JPEG3 önce gelebiliyor; ilk bitmap'i sayfa sanmak o sayfayı
+**düşük çözünürlüklü ikizine** düşürüyordu (1993-09/006 kapağı 495×660 kalmıştı). `first_bitmap`
+artık alfasız JPEG2'yi (tag 21) önce dener; 006 kapağı 800×1067 oldu. 2000-05/086'da yüksek
+çözünürlüklü kapak verisi **gerçekten bozuk** (29,8 MB çöp, SOF 61982×30789) → orada kapak
+495×660 kalıyor.
+
+SWF'in içindeki veri JPEG'dir (`DCTDecode`). `swfextract` bu sıkıştırılmış veriyi olduğu gibi alır, sadece dosyanın geçerli bir JPEG olması için paylaşılan `JPEGTables`'ı (nicemleme/Huffman tabloları) başına ekler. PDF de bu JPEG'i **yeniden sıkıştırmadan** gömer. Yani PDF'teki görüntü, DVD'deki bit akışının aynısıdır — tek bir nesil kayıp yok.
 
 **Neden 800×1067? Daha büyüğü yok mu?**
 DVD'de bu var: aynı sayfa 800×1067 (yüksek) ve 495×660 (düşük) olarak iki kez gömülü. Daha yüksek çözünürlük DVD'de yok — basılı dergiyi yeniden taramadan elde edilemez.
