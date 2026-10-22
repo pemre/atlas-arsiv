@@ -87,9 +87,41 @@ def dir_order(folder):
                          recursive=True))
     if not d:
         return None
+    ham = P(d[0]).read_bytes()
     adlar = [m.group(0).decode() for m in
-             re.finditer(rb'[0-9]{3}[_0-9a-z]{0,20}\.jpg', P(d[0]).read_bytes(), re.I)]
-    sira = list(dict.fromkeys(_cekirdek(a) for a in adlar))    # sıra korunur
+             re.finditer(rb'[0-9]{3}[_0-9a-z]{0,20}\.jpg', ham, re.I)]
+    if adlar:
+        sira = list(dict.fromkeys(_cekirdek(a) for a in adlar))    # sıra korunur
+    else:
+        # 2009-2012: .dir sayfa dosya adlarını taşımıyor, yalnız '004_' gibi
+        # numara önekleri var (ad sonrası Türkçe karakterde kesiliyor).
+        # Bu önekler cast sırasıyla dizilidir → sıra buradan çıkar.
+        sira = []
+        for parca in re.split(rb'[^\x20-\x7e]+', ham):
+            m = re.match(rb'(\d{3})_', parca)
+            if m:
+                s = m.group(1).decode()
+                if s not in sira:
+                    sira.append(s)
+        # .dir tek tek basılı sayfayı listeler (040), klasörde yay olarak durur
+        # (040_041.jpg) → eşleşme ilk üç rakam üzerinden yapılır.
+        isim = {}
+        for f in os.listdir(folder):
+            if not f.lower().endswith(('.jpg', '.jpeg', '.png')):
+                continue
+            m2 = re.match(r'(\d{3})', f)
+            if not m2:
+                continue
+            k, yol = m2.group(1), os.path.join(folder, f)
+            if k not in isim or os.path.getsize(yol) > os.path.getsize(
+                    os.path.join(folder, isim[k])):
+                isim[k] = f
+        if not sira or len([a for a in sira if a in isim]) < len(isim) * 0.5:
+            return None
+        bulunan = [isim[a] for a in sira if a in isim]
+        kalan = [f for f in sorted(os.listdir(folder))
+                 if f not in set(bulunan) and f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+        return bulunan + kalan
     mevcut, hepsi = {}, []
     for f in os.listdir(folder):               # aynı çekirdeğin büyük kopyası seçilir
         if f.lower().endswith(('.jpg', '.jpeg', '.png')):
@@ -138,7 +170,8 @@ def collect(folder, order=None):
         kalan = [f for f in sorted(os.listdir(folder))
                  if f.lower().endswith(('.jpg', '.jpeg', '.png'))
                  and f not in set(order)]
-        seq = list(order) + kalan
+        seq = [f for f in list(order) + kalan
+               if os.path.exists(os.path.join(folder, f))]      # hayalet kayıt
         kesin = {(i + 1, i + 1): [os.path.join(folder, f)] for i, f in enumerate(seq)}
         return kesin, []
 

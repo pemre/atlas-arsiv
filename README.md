@@ -277,7 +277,22 @@ kapak oluyor).
 | 2006-01 (154) | `ocak08._panorama.jpg`, `ocak08_panorama.jpg`'nın yazım hatası ikizi (fazladan nokta) | kapalı — büyük olan seçildi |
 | 2007-12 (177) | `Thumbs`'ta 4 yay var (`12_pages_48_49`, `96_97`, `98_99`, `0118_0119`), `Images`'ta yok | **açık** — DVD'ye konmamış, PDF'te 4 sayfa eksik |
 | 2006'da 6 sayı | kapak yalnız `Thumbs`'ta, `Images`'ta yok | kapalı — kapak `images/kapaklar`'dan geldi |
-| 2010-02 (203) | 64 ada karşı 62 gerçek dosya (2 hayalet kayıt) + 2 varyant | kapalı — 1 kapak + 60 görsel = 61 sayfa |
+| 2010-02 (203) | 64 ada karşı 62 gerçek dosya: `022_023_Şubat.jpg` ve `024_Şubat.jpg` **hayalet kayıt** (`os.listdir` gösteriyor, açılamıyor) | kapalı — 62 gerçek dosya, sıra `.dir`'den: **62 sayfa** (eskiden ada göre 61) |
+
+### 2009-2012: sıra `.dir`'in sayfa öneklerinden okunur
+
+Bu yılların `.dir`'inde sayfa dosya adları **tam yazılmaz** (`004_Şubat.jpg` yerine yalnız
+`004_`, çünkü okunamayan Türkçe karakterde metin kesiliyor) ama önekler **cast sırasıyla**
+dizilidir. `dir_order()` bu önekleri sırayla okur ve klasördeki karşılığına bağlar:
+`.dir` tek tek **basılı** sayfayı listeler (`040`), klasörde yay olarak durur (`040_041.jpg`)
+→ eşleşme ilk üç rakam üzerinden. `.dir` klasörün yarısından azını kapsıyorsa ad sırasına
+dönülür.
+
+48 sayının (2009-2012) hepsi için `.dir` sırası ile ad sırası kıyaslandı: **47'sinde aynı**;
+tek gerçek fark **2010-02**: `.dir` sırası 022/024/026'yı sonraya atıyor, ad sırası başta
+tutuyordu → sayı `.dir` sırasıyla yeniden üretildi (**61 → 62 sayfa**). Kalan 3 "belirsiz"
+sayı (2010-05, 2011-02, 2011-05) bu kıyasla **kapandı**: sıra zaten doğruydu. 2012'de `.dir`
+sayfa öneki taşımıyor → orada tek kaynak ad sırası.
 
 ### Uygulamayla doğrulama (2006, 12 sayının tamamı)
 
