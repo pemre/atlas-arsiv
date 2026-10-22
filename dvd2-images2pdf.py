@@ -118,9 +118,13 @@ def _ayni(a, b, n=1 << 20):
 
 # Altında sayfa numarası olmayan katlanır sayfalar: uygulamada göründükleri aralık.
 # (2006-07'de iki katlama, 53-54 yayından sonra, 55-56'dan önce.)
+# (sayfa aralığı, aynı aralıktaki sıra) — sıra uygulamanın gösterdiği sıra:
+# önce harita (_2), sonra vadinin fotoğrafı (_1).
+KAPAK_THUMBS = {'160', '164'}      # 2006: uygulamada kapak var, Images'te yok
+
 KATLAMA_YER = {
-    'temmuz_katlama_1_kelkit.jpg': (54, 55),
-    'temmuz_katlama_2_kelkit.jpg': (54, 55),
+    'temmuz_katlama_1_kelkit.jpg': ((54, 55), 1),
+    'temmuz_katlama_2_kelkit.jpg': ((54, 55), 0),
 }
 log_uyari = []
 
@@ -161,11 +165,12 @@ def collect(folder, order=None):
             # katlanır sayfa (ör. temmuz_katlama_1_kelkit.jpg) numara taşımıyor;
             # uygulamada 53-54 yayından sonra görünüyor → o aralığa yerleştirilir
             if 'katlama' in f.lower():
-                anahtar = KATLAMA_YER.get(f)
-                if anahtar is None:
+                yer = KATLAMA_YER.get(f)
+                if yer is None:
                     log_uyari.append(f)
-                    anahtar = (999, 999)
-                best.setdefault(anahtar, []).append(path)
+                    yer = ((999, 999), 0)
+                anahtar, sira = yer
+                best.setdefault(anahtar, []).insert(sira, path)
             continue
         a, b = pn
         if b == a and is_spread(path):         # tek numara ama görsel yay
@@ -180,9 +185,31 @@ def collect(folder, order=None):
     return best, prepend
 
 
+def thumbs_cover(folder):
+    """Kapak yalnız Thumbs/<no>/ içinde kalmışsa onu kullan (517×690, bulanık).
+
+    2006-07'de bazı sayıların kapağı Images/ klasöründe yok; uygulama yine de
+    kapak gösteriyor (kaynak: Thumbs)."""
+    dergi = os.path.dirname(os.path.dirname(folder))      # .../Dergi/Images/<no>
+    d = os.path.join(dergi, 'Thumbs', os.path.basename(folder))
+    if not os.path.isdir(d):
+        return None
+    for f in sorted(os.listdir(d)):
+        if f.lower().endswith(('.jpg', '.jpeg', '.png')) and 'kapak' in f.lower():
+            return os.path.join(d, f)
+    return None
+
+
 def build(folder, pdf_path, log=print, cover=None, blanks=False):
     picks, prepend = collect(folder, dir_order(folder))
     prepend = [max(prepend, key=os.path.getsize)] if prepend else []   # tek kapak
+    # Uygulama bu sayılarda ayrıca bir kapak gösteriyor ama Images'te kapak
+    # dosyası yok (yalnız Thumbs'ta 517×690 var). Diğerlerinde ilk sayfa zaten
+    # kapağın kendisi; oraya kapak eklemek sayfayı yineliyor.
+    if not prepend and os.path.basename(folder) in KAPAK_THUMBS:
+        k = thumbs_cover(folder)
+        if k:
+            prepend = [k]
     cover = None if prepend else cover        # klasörde kapak varsa dışarıkini alma
     if cover and not any(a <= 1 <= b for a, b in picks):
         picks.setdefault((1, 1), []).append(cover)    # kapak ayrı klasörde

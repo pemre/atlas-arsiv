@@ -292,7 +292,9 @@ Sonuç: **10 sayıda sıra birebir.** İki fark bulundu, ikisi de düzeltildi:
 
 Kapak uyarısı: 160 ve 164'ün kapağı DVD'de **yalnız `Thumbs/` içinde 517×690 küçük resim**
 olarak var (`temmuz_KAPAK.jpg`, `kasim_109_kapak.jpg`); `Images/` klasöründe tam boy kopyası
-yok. Bu yüzden 164'ün PDF'i içindekilerle başlıyor.
+yok. Kullanıcı kararı: bulanık da olsa eklensin → bu iki sayı `KAPAK_THUMBS` listesinde,
+kapak PDF'in ilk sayfası (517×690). Diğer sayılarda ilk sayfa zaten kapağın kendisi
+(1359×1812 ya da 2690×1812 yay), oraya ayrıca kapak eklemek sayfayı yineliyor.
 
 Çalıştırmak için gerekenler (Türkçe Windows XP şişesi): `msvbvm60.dll` + `asycfilt.dll` +
 `stdole2.tlb` sistem32'ye, sonra `regsvr32 C:\2006\alPicView.ocx`. CrossOver'ın `wine`'ı
