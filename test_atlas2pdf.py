@@ -61,6 +61,20 @@ def test_write_pdf():
         assert data.count(b'/DCTDecode') == 3          # her sayfa JPEG olarak gömülü
 
 
+def test_page_plan():
+    """bts'nin kendi sayfa dizisi: 1. sayının siyah dolguları elle doğrulanmış hâliyle
+    birebir olmalı (kullanıcının basılı dergiyle karşılaştırıp sıraladığı PDF)."""
+    bts = '/Volumes/ATLAS/DVD1/1993/sayi4.bts'
+    if not os.path.exists(bts):
+        print('  (atlandı: DVD bağlı değil)')
+        return
+    plan = A.page_plan(bts)
+    assert plan is not None, 'sayfa dizisi okunamadı'
+    blacks = [i + 1 for i, x in enumerate(plan) if x is None]
+    assert blacks == [5, 23, 35, 67, 77, 85], blacks
+    assert len(plan) == 113, len(plan)
+
+
 if __name__ == '__main__':
     for name, fn in sorted(globals().items()):
         if name.startswith('test_') and callable(fn):

@@ -86,20 +86,26 @@ Bir sayı yarıda kalırsa aynı komutu tekrar çalıştırın: tamamlanmış sa
 | `--out <dizin>` | Toplu çıktı klasörü (varsayılan: `AtlasPDF`) |
 | `--keep-jpg` | Toplu çevirimde JPEG'leri de saklar (sayı başına klasör açar; varsayılan: sadece PDF) |
 | `--pdf-only` | Tek dosya çeviriminde de JPEG'leri siler |
-| `--blanks 4,21,32` | Belirtilen sayfalardan **sonra** siyah dolgu sayfası ekler |
+| `--blanks 4,21,32` | Sayfa dizisi okunamazsa: belirtilen sayfalardan **sonra** siyah dolgu ekler (normalde gerekmez) |
 | `--tiles 102-107` | Harita dilimlerini otomatik bulamazsa aralığı elle verir |
 
 ---
 
-## Siyah dolgu sayfaları
+## Siyah dolgu sayfaları (eksik reklam sayfaları)
 
 DVD'ye bazı reklam sayfaları hiç konmamış (o dönem yayın hakları vs.). Bu yüzden PDF iki sayfa yan yana görüntülendiğinde bir yerde sol-sağ eşleşmesi kayar ve tam sayfa fotoğraflar ortadan ikiye bölünmüş gibi görünür.
 
-`--blanks` ile eksik sayfaların yerine siyah sayfa konur, böylece çift sayfa görünümü (yay ve karşı sayfa) dergideki gibi olur.
+Eksik sayfaların **yeri tahmin edilmez: dosyanın kendisinde yazılıdır.** Flash uygulaması sayfa dizisini `setPages` içinde kurar ve DVD'ye aktarılmayan sayfanın yerine `dummy` sembolü koyar:
 
-**1. sayı (Nisan 1993) için doğrulanmış konumlar script içinde hazır** (`BLANKS = {1: (4, 21, 32, 63, 72, 79)}`), toplu çevirimde otomatik uygulanır → 107 sayfa + 6 dolgu = **113 sayfa**.
+```
+pageMask = [p1 … p34, dummy, p35 … p77, dummy, p78 … p84, dummy, p85 … p114]
+```
 
-Başka bir sayı için konum bulmak isterseniz: PDF'i çift sayfa görünümünde açın, kaymanın olduğu yeri not edin ve sayfa numarasını `--blanks`'a yazın. (Dolgu sayfaları PDF'e dahildir, JPEG olarak da siyah üretilir.)
+`page_plan()` bu diziyi `swfdump -a` çıktısından okur; her `dummy` PDF'te siyah sayfa olur, sıra ve sayfa numaraları basılı dergideki gibidir. Hiçbir şey elle girilmez.
+
+Doğrulama: 1. sayı için dizi `5, 23, 35, 67, 77, 85` verir — basılı dergiyle karşılaştırılıp elle sıralanmış PDF'teki 6 dolgu konumunun **birebir aynısı** (`test_atlas2pdf.py` içindeki `test_page_plan` bunu kilitler).
+
+`--blanks` artık yalnız elle geçersiz kılma içindir (dizisi okunamayan bir dosya için); `BLANKS` sözlüğü de geri düşüş olarak duruyor.
 
 ## Harita posteri
 

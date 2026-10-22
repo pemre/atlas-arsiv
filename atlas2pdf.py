@@ -34,7 +34,35 @@ IMGC = (6, 20, 21, 35, 36, 90)   # DefineBits, Lossless, JPEG2/3/4, Lossless2
 # Elle doğrulanmış siyah dolgu konumları: {sayı no: (bu sayfalardan SONRA dolgu)}
 # 1. sayı (Nisan 1993) basılı dergide CD'ye aktarılmayan reklam sayfaları yüzünden
 # çift sayfa görünümünde kayıyordu; konumlar basılı dergiyle karşılaştırılarak bulundu.
-BLANKS = {1: (4, 21, 32, 63, 72, 79)}
+# Artık gerekmiyor: dolgu yerleri bts'nin kendi ActionScript sayfa dizisinde "dummy"
+# olarak yazılı (bkz. page_plan). Bu sözlük yalnız elle geri düşüş için.
+BLANKS = {1: (4, 21, 32, 63, 72, 79),
+          2: (34, 77, 84)}   # siyah, bildirilen sayfanın KENDİSİ olur (35, 78, 85)
+
+
+def page_plan(swf):
+    """Derginin KENDİ sayfa dizisi: [sembol_adı ... None(dummy/boş sayfa) ...].
+
+    Flash uygulaması (setPages) diziyi push ederken ters yazar, InitArray çevirir.
+    dummy = basılı dergide olup DVD'ye aktarılmayan sayfa; oraya siyah dolgu girer.
+    Sembol adları pN (sayfa) ya da preklamN (reklam sayfası) olabilir.
+    Sondaki dummy (arka kapak) atlanır — PDF'i iki sayfa eksik bırakmasın.
+    """
+    out = subprocess.run(['swfdump', '-a', swf], capture_output=True, text=True).stdout
+    for line in out.splitlines():
+        if '("Array")' not in line or '"pageMask"' not in line:
+            continue
+        names = re.findall(r'\((?:"([^"]*)"|-?\d+)\)', line)[1:]
+        if names and names[-1] == 'Array':
+            names = names[:-1]
+        seq = [s for s in reversed(names)
+               if s == 'dummy' or re.fullmatch(r'[a-z_]+\d+', s)]
+        if not seq:
+            continue
+        while seq and seq[-1] == 'dummy':        # sondaki dummy = arka kapak
+            seq.pop()
+        return [None if s == 'dummy' else s for s in seq]
+    return None
 
 
 # ---------------------------------------------------------------- swf okuma
@@ -302,7 +330,8 @@ def _usable(path):
 
 
 # ---------------------------------------------------------------- dönüştürme
-def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, name=None, log=print):
+def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, name=None, log=print,
+            auto_plan=True):
     """Tek bir SWF/.bts dosyasını <out>/NNN.jpg + <out>/<ad>.pdf olarak çıkarır.
     name verilirse PDF/poster bu adı taşır (toplu çevirimde dergi sayı adı)."""
     stem = name or os.path.basename(out)
@@ -353,30 +382,64 @@ def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, name=None, lo
     blanks = set(blanks)
     log(f'  sayfa ailesi: {", ".join(cands)} — {len(keys)} sayfa')
 
-    pages, n, blanked = [], 0, 0
-    for idx, key in enumerate(keys, 1):
+    # sembol adı ("p36", "preklam1") -> (aile, anahtar); reklam sayfaları ayrı aile
+    by_name = {}
+    for pre in sorted(fams, key=lambda p: -areas_of.get(p, 0)):
+        for k in fams[pre]:
+            by_name[pre + str(k[0]) + k[1]] = (pre, k)
+
+    plan = page_plan(swf) if auto_plan else None
+    if plan:
+        log(f'  sayfa dizisi: bts\'nin kendi sırası, {plan.count(None)} siyah dolgu')
+        seq = plan
+    else:                                   # geri düşüş: pN sırası + elle dolgular
+        own = max([pre for pre, c in counts.items() if c == top],
+                  key=lambda pre: areas_of.get(pre, 0))
+        seq = []
+        for idx, key in enumerate(keys, 1):
+            seq.append(own + str(key[0]) + key[1])
+            if idx in blanks:
+                seq.append(None)
+
+    pages, n, blanked, size = [], 0, 0, None
+    for item in seq:
+        if item is None:                    # basılı dergideki eksik sayfa
+            if size is None:
+                continue
+            blanked += 1
+            b = f'{tmp}/b{blanked:04d}.jpg'
+            Image.new('RGB', size, (0, 0, 0)).save(b, quality=80)
+            pages.append(b)
+            continue
+        hit = by_name.get(item)
+        if hit is None:                    # eksik export: aynı numaranın ikizi
+            m = re.fullmatch(r'([a-zA-Z_]*?)(\d+)(_?)', item)
+            twin = [(p, (int(m.group(2)), m.group(3))) for p in cands
+                    if m and (int(m.group(2)), m.group(3)) in fams[p]]
+            if twin:
+                hit = twin[0]
+                log(f'  uyarı: "{item}" yok, "{twin[0][0]}{m.group(2)}" kullanıldı')
+        if hit is None:
+            log(f'  uyarı: sayfa dizisindeki "{item}" bu dosyada yok')
+            continue
+        own, key = hit
         f = None
-        for pre in cands:                       # en yüksek çözünürlükten başla
+        for pre in [own] + [c for c in cands if c != own]:
             if key in fams[pre]:
                 f = extract(fams[pre][key])
                 if f:
-                    if pre != cands[0]:
-                        log(f'  uyarı: {idx}. sayfa "{pre}N" kümesinden '
-                            f'(yüksek çözünürlüklü kopya yok/bozuk)')
+                    if pre != own:
+                        log(f'  uyarı: "{item}" kendi ailesinden çıkarılamadı, '
+                            f'"{pre}" kullanıldı')
                     break
         if not f:
-            log(f'  atlandı (çıkarılamadı): {key}')
+            log(f'  atlandı (çıkarılamadı): {item}')
             continue
         n += 1
         dst = f'{tmp}/p{n:04d}.jpg'
         shutil.copy(f, dst)
+        size = Image.open(f).size
         pages.append(dst)
-        if n in blanks:
-            blanked += 1
-            w, h = Image.open(f).size
-            b = f'{tmp}/p{n:04d}b.jpg'
-            Image.new('RGB', (w, h), (0, 0, 0)).save(b, quality=80)
-            pages.append(b)
 
     final = []
     for i, src in enumerate(pages, 1):
