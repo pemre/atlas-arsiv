@@ -176,6 +176,13 @@ için "kesin" değil, aşağıdaki tabloya bak.
 - `atlas.exe`'nin son 13 MB'ı PE dışında bir **paketli katman**: başlık `PCRS` +
   `0xAFBCADAC`, içinde Lua bytecode ve bitmap chunk'ları var; Director movie 4CC'si
   (`RIFX`/`XFIR`/`CASt`/`Lscr`/`VWSC`) veya düz metin dosya adı **yok**, string'ler gizlenmiş.
+- Flash projector **değil**: `Flash`, `Shockwave`, `Zinc`, `SWF Studio`, `Screenweaver`,
+  `mProjector` string'lerinin hiçbiri yok; Flash projector EXE'lerinin sonundaki
+  `0xFA123456` işareti de yok (`tail -c 8` → `1a6d3c01a90d3315`). Yani "bozuk projector"
+  değil, hiç projector olmamış.
+- Kabuk **VB6**: `alPicView.ocx` = `MSVBVM60.DLL` ile çalışan 86 KB'lık VB6 ActiveX
+  görüntüleyici (`GetOpenFileName`, "Zoom array"); içinde ne görsel adı ne klasör listesi
+  var. Klasördeki `*.U32`, `*.XMO` (Director Xtras) artıkları eski sürümden kalma.
 - Belirleyici bulgu: exe `FindFirstFile` çağırıyor — sayfa listesini **çalışma anında
   klasörden** okuyor. Yani saklanmış bir sayfa dizisi yok; sıra = klasör listeleme sırası
   = alfabetik, ki adlar sayfa numarasını taşıdığı için numara sırasıyla aynı. `Dergi/Thumbs/<sayı>/` sayfa adlarının tam listesini
