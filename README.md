@@ -134,6 +134,61 @@ Toplu çevirim tek sayı patlarsa durmaz, hatayı yazıp devam eder ve sonunda l
 
 ---
 
+## 2006 sonrası: görsel klasörleri (`dvd2-images2pdf.py`)
+
+2006'dan itibaren DVD'deki içerik Flash değil, **ayrı JPG sayfaları**. `.exe` bir
+Macromedia Director sunucusudur, sayfaları gömmez — sıra bilgisi dosya adlarında
+ve `.dir` içindeki arama indeksinde.
+
+Sayfa numarası dosya adında yazılı, iki kural var:
+
+| Dönem | Kural | Örnek |
+|-------|-------|-------|
+| 2006-2007 | tek numara = tek sayfa | `ocak08_panorama.jpg` → 8 |
+| 2008 sonrası | her dosya bir **yay** (2 sayfa) | `004_ocak.jpg` → 4-5 |
+
+Klasör düzeni de yıla göre değişir:
+
+```
+2006-2007  <yıl>/Dergi/Images/<sayı no>/
+2008       <yıl>/content/aylar/<ay>_1500/      (_1000 düşük çözünürlük)
+2009-2010  <yıl>/images/large/<NN>_<Ay>/
+2011       <yıl>/images/large_2/<NN>_<Ay>/
+2012       <yıl>/images/_Large/<NN>_<Ay>/
+```
+
+- **Kapak** çoğu zaman sayfa klasöründe değil: `images/kapaklar/01_ocak.jpg`
+  (veya 2012'de `_kapaklar/Ocak_001.jpg`). Bazı sayılarda klasörün içinde iki
+  kapak dosyası bulunur (`KAPAK_Ocak.jpg` + `AT_202_KAPAK.jpg`) — en büyüğü
+  seçilir, kapak PDF'e **bir kez** girer.
+- **Eksik sayfa** = numara atlaması → siyah dolgu (DVD'ye konmamış reklam sayfası).
+- **Yay görselleri bölünmez**, tek geniş sayfa olarak girer.
+
+### `.dir` indeksi ile doğrulama
+
+`.dir` dosyasının içinde her metinli sayfa için `<kayit><sayfa>N</sayfa><data>…`
+kaydı var (sayfa numarası + sayfanın metni). Bu, Flash dönemindeki `pageMask`
+dizisinin karşılığı: sıra için dosya adlarına güvenilebilir, indeks onları
+doğrular (2010-01 ve 2009-01'de 51 sayfanın 50'si birebir; tek fark kapak).
+
+### Kullanım
+
+```bash
+python3 dvd2-images2pdf.py --year 2010 --out ~/AtlasPDF
+```
+
+### Tuzak: eksik ISO
+
+DVD2 ISO'su eksik indirilmişse (bildirilen hacim > dosya boyutu) diskin **sonundaki**
+sayılar `Input/output error` verir. Kontrol:
+
+```python
+struct.unpack('<I', open(iso,'rb').read(2048*17)[80:84])[0] * 2048  # beklenen boyut
+os.path.getsize(iso)                                                # gerçek boyut
+```
+
+Eşit değilse ISO'yu yeniden oluşturun ya da diski doğrudan bağlayıp `--root` verin.
+
 ## Katkı
 
 - Başka bir sayı için doğrulanmış `--blanks` konumları bulduysanız `BLANKS` sözlüğüne ekleyip PR açın.

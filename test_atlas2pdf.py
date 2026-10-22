@@ -75,6 +75,34 @@ def test_page_plan():
     assert len(plan) == 113, len(plan)
 
 
+def test_dvd2_page_numbers():
+    """2006+ görsel klasörleri: iki adlandırma kuralı ve tek kapak kuralı."""
+    import importlib.util
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dvd2-images2pdf.py')
+    spec = importlib.util.spec_from_file_location('d2', path)
+    d2 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(d2)
+
+    # 2006-07: tek numaralı dosya TEK sayfa
+    assert d2.page_numbers('ocak08_panorama.jpg') == (8, 8)
+    assert d2.page_numbers('ocak11_12_panorama.jpg') == (11, 12)
+    assert d2.page_numbers('Ocak_22_23_aylayasam.jpg') == (22, 23)
+    # 2008+: tek numaralı dosya bir YAY (2 sayfa); yıl eki sayılmaz
+    assert d2.page_numbers('004_ocak.jpg', True) == (4, 5)
+    assert d2.page_numbers('010_011_ocak.jpg', True) == (10, 11)
+    assert d2.page_numbers('006_ocak2011.jpg', True) == (6, 7)
+    assert d2.page_numbers('KAPAK_Ocak.jpg') is None
+
+    with tempfile.TemporaryDirectory() as d:
+        Image.new('RGB', (80, 107), (10, 10, 10)).save(os.path.join(d, 'KAPAK_ocak.jpg'))
+        Image.new('RGB', (160, 214), (20, 20, 20)).save(os.path.join(d, 'AT_202_KAPAK.jpg'))
+        Image.new('RGB', (80, 107), (200, 0, 0)).save(os.path.join(d, '002_003_ocak.jpg'))
+        cover = os.path.join(d, 'dis_kapak.jpg')
+        Image.new('RGB', (80, 107), (0, 0, 200)).save(cover)
+        st = d2.build(d, os.path.join(d, 'a.pdf'), pair_single=True, cover=cover)
+        assert st['pages'] == 2, st        # 1 kapak + 1 yay — kapak üçlenmemeli
+
+
 if __name__ == '__main__':
     for name, fn in sorted(globals().items()):
         if name.startswith('test_') and callable(fn):
