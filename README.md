@@ -172,7 +172,10 @@ yıl klasöründeki **tüm görsel-dışı dosyalar** (exe/ocx/dll/u32/xmo/dat/i
 hem uzantısız ad için tarandı → **0 eşleşme**. `atlas.exe` içinde gömülü SWF/Director
 filmi de yok (`CWS` baytları tesadüfi: sürüm alanı 53/80, zlib patlıyor; `RIFX`,
 `FGDM`, `FGDC`, `agsa` hiç yok). `Dergi/Thumbs/<sayı>/` sayfa adlarının tam listesini
-veriyor (doğrulama için kullanıldı) ama sıra bilgisi taşımıyor.
+veriyor — yalnız **hangi adlar var** sorusu için kullanıldı, sıra için değil. Thumbs
+damgaları sayfa numarasıyla artıyor (2006/154'te 70/73, 2007/166'da 68/70 çift artan)
+ama bu **kanıt sayılmaz**: küçük resimleri üreten araç klasörü alfabetik listeliyorsa
+aynı sonucu verir; yani kendi kendini doğrulayan halka.
 
 **Bilinen eksik sayfalar:** 2007-12 (sayı 177) — `Thumbs` klasöründe 4 yay var
 (`12_pages_48_49`, `12_pages_96_97`, `12_pages_98_99`, `12_pages_0118_0119`) ama
