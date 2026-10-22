@@ -8,6 +8,15 @@ Atlas'ın 2000'lerin başında verdiği DVD'lerde her sayı `sayi4.bts`, `sayi5.
 
 Bu araç o sayfaları **derginin kendi sırasıyla** çıkarır, siyah dolguları yerleştirir, interaktif haritayı poster olarak birleştirir ve hepsini tek PDF yapar.
 
+Arşivin tamamı **237 sayı** (1993-04 → 2012-12) ve iki ayrı hat ile üretilir:
+
+| Dönem | Sayı | Kaynak | Script |
+|-------|------|--------|--------|
+| 1993-2005 | 153 | `.bts` = Flash (SWF), sayfalar gömülü | `atlas2pdf.py` |
+| 2006-2012 | 84 | ayrı JPG klasörleri + Director `.dir` indeksi | `dvd2-images2pdf.py` |
+
+Hangi bilginin **kesin**, hangisinin **çıkarım** olduğu [Kesinlik tablosu](#kesinlik-tablosu-237-sayının-209u-kesin-28i-değil) bölümünde yazılı.
+
 ---
 
 ## Neden "doğru sayfa sırası" bu kadar zor?
@@ -127,126 +136,158 @@ DVD'de bu var: aynı sayfa 800×1067 (yüksek) ve 495×660 (düşük) olarak iki
 Mac'te sayı başına ~10 saniye. PDF'ler sayı başına ~25-30 MB; `--pdf-only` ile toplam ~4 GB (153 sayı), JPEG'lerle birlikte ~10 GB.
 
 **Hangi DVD'lerle test edildi?**
-`Atlas_Dergisi_1993-2002_DVD1.iso` (117 sayı) ve `Atlas_Dergisi_2003-2012_DVD2.iso` (2003-2005, 36 sayı) — toplam 153 sayı. Dizin yapısı `DVD1/<yıl>/sayiN.bts` olan her arşivde çalışır.
+`Atlas_Dergisi_1993-2002_DVD1.iso` (117 sayı) ve `Atlas_Dergisi_2003-2012_DVD2.iso` — toplam **237 sayı** (1993-04 → 2012-12), 25.584 sayfa, 7,97 GB. DVD1'de 1993-2005 Flash `.bts` dosyaları (153 sayı), DVD2'de 2003-2005'in devamı + 2006-2012 JPG klasörleri (84 sayı) var.
 
 **Bir sayıda hata alırsam?**
 Toplu çevirim tek sayı patlarsa durmaz, hatayı yazıp devam eder ve sonunda listeler.
 
 ---
 
-## 2006 sonrası: görsel klasörleri (`dvd2-images2pdf.py`)
+## 2006-2012: ayrı JPG sayfaları (`dvd2-images2pdf.py`)
 
-2006'dan itibaren DVD'deki içerik Flash değil, **ayrı JPG sayfaları**. `.exe` bir
-Macromedia Director sunucusudur, sayfaları gömmez — sıra bilgisi dosya adlarında
-ve `.dir` içindeki arama indeksinde.
+2006'dan sonra DVD'de Flash filmi yok: sayfalar klasörde **tek tek JPG** olarak duruyor,
+`.exe` sadece bir görüntüleyici kabuk. Sayfa sırası bu yüzden dosya düzeninden okunur.
 
-Sayfa numarası dosya adında yazılı:
-
-| Ad | Anlam |
-|----|-------|
-| `ocak08_panorama.jpg`, `004_ocak.jpg` | 8. / 4. sayfa — yay mı, orana bakılır |
-| `ocak11_12_panorama.jpg`, `01_page012_013.jpg` | 11-12 / 12-13 **yayı** |
-| `01_page006.jpg` | 6. sayfa (2007 düzeni) |
-| `KAPAK_ocak.jpg` | numarasız kapak → başa eklenir |
-
-**Sıra kaynağı `.dir`'dir (2008-2012).** Her sayının kendi `<ay>.dir` dosyası var;
-içindeki sıralı jpg adları Director cast sırası = uygulamanın gerçek sayfa sırası.
-`dir_order()` bunu okur, aynı çekirdeğe düşen kopyalardan büyüğünü seçer
-(`Ocak_014_015_L.jpg` ↔ `014_015.jpg`). Ad sıralamasına göre üretim 60 sayının
-45'inde `.dir`'den farklı çıkıyordu — 1-3 dosya (2/3/4 kopyaları, boşluklu adlar),
-biri 36 dosya. `.dir` görsel listesi içermeyen aylarda (2010-02, 2010-05, 2011-02,
-2011-05) ve `.dir`'i hiç olmayan 2006-2007'de ad sıralamasına düşülür — bu 28 sayı
-için "kesin" değil, aşağıdaki tabloya bak.
-
-### Neyi kesin biliyoruz, neyi bilmiyoruz
-
-| Dönem | Sayı | Sıra kaynağı | Kesinlik |
-|-------|------|--------------|----------|
-| 1993-2005 | 153 | `bts` içindeki `setPages`/`pageMask` dizisi | **kesin** — uygulamanın kendi sayfa dizisi |
-| 2008 (10 ay), 2009-2010 (22 ay), 2012 (12 ay) | 56 | `<ay>.dir` içindeki sıralı jpg adları (Director cast sırası) | **kesin** — uygulama sayfaları bu sırayla yüklüyor |
-| 2010-02, 2010-05, 2011-02, 2011-05 | 4 | dosya adı sırası | **kesin değil** — `.dir` var ama yalnız `<kayit><sayfa>` metin indeksi (39-51 kayıt); sayfa *numaralarını* doğruluyor, *sırayı* vermiyor |
-| 2006, 2007 | 24 | yalnız dosya adı sırası | **kesin değil** — aşağıdaki arama boş çıktı |
-
-2006/2007 için indeks arayışı (sonuç: **indeks yok, array yok**):
-
-- `atlas.exe`, `screensaver.exe`, `alPicView.ocx` dahil yıl klasöründeki tüm görsel-dışı
-  dosyalar (exe/ocx/dll/u32/xmo/dat/ini) hem tam ad hem uzantısız ad için tarandı → **0 eşleşme**.
-- SWF taraması: dosya başından değil **her ofsetten** `FWS`/`CWS`/`ZWS` imzası arandı ve
-  adaylar doğrulandı (sürüm 1-60, uzunluk makul, CWS'te `0x78` zlib başlığı) → **geçerli aday 0**.
-- `atlas.exe`'nin son 13 MB'ı PE dışında bir **paketli katman**: başlık `PCRS` +
-  `0xAFBCADAC`, içinde Lua bytecode ve bitmap chunk'ları var; Director movie 4CC'si
-  (`RIFX`/`XFIR`/`CASt`/`Lscr`/`VWSC`) veya düz metin dosya adı **yok**, string'ler gizlenmiş.
-- Flash projector **değil**: `Flash`, `Shockwave`, `Zinc`, `SWF Studio`, `Screenweaver`,
-  `mProjector` string'lerinin hiçbiri yok; Flash projector EXE'lerinin sonundaki
-  `0xFA123456` işareti de yok (`tail -c 8` → `1a6d3c01a90d3315`). Yani "bozuk projector"
-  değil, hiç projector olmamış.
-- Kabuk **VB6**: `alPicView.ocx` = `MSVBVM60.DLL` ile çalışan 86 KB'lık VB6 ActiveX
-  görüntüleyici (`GetOpenFileName`, "Zoom array"); içinde ne görsel adı ne klasör listesi
-  var. Klasördeki `*.U32`, `*.XMO` (Director Xtras) artıkları eski sürümden kalma.
-- Belirleyici bulgu: exe `FindFirstFile` çağırıyor — sayfa listesini **çalışma anında
-  klasörden** okuyor. Yani saklanmış bir sayfa dizisi yok; sıra = klasör listeleme sırası
-  = alfabetik, ki adlar sayfa numarasını taşıdığı için numara sırasıyla aynı. `Dergi/Thumbs/<sayı>/` sayfa adlarının tam listesini
-veriyor — yalnız **hangi adlar var** sorusu için kullanıldı, sıra için değil. Thumbs
-damgaları sayfa numarasıyla artıyor (2006/154'te 70/73, 2007/166'da 68/70 çift artan)
-ama bu **kanıt sayılmaz**: küçük resimleri üreten araç klasörü alfabetik listeliyorsa
-aynı sonucu verir; yani kendi kendini doğrulayan halka.
-
-**Bilinen eksik sayfalar:** 2007-12 (sayı 177) — `Thumbs` klasöründe 4 yay var
-(`12_pages_48_49`, `12_pages_96_97`, `12_pages_98_99`, `12_pages_0118_0119`) ama
-`Images` klasöründe yok; DVD'ye konmamış, PDF'te o 4 sayfa eksik. 2006'nın 6 sayısında
-kapak yalnız `Thumbs`'ta (Images'ta yok) — kapak `images/kapaklar`'dan geldiği için
-PDF'te mevcut.
-
-**Yay tespiti ada değil görsele dayanır:** yay görselleri iki sayfa genişliğinde
-(en-boy oranı ~1,5), tek sayfa ~0,76. `is_spread()` oranı 1,2'nin üstündeyse iki
-sayfa sayar. Adlar yıldan yıla değişiyor (2009 ve 2012'de dosyalar tek sayfa,
-2008'de karışık), oran değişmiyor.
-
-Klasör düzeni de yıla göre değişir:
+### Klasör düzeni yıla göre değişir
 
 ```
-2006-2007  <yıl>/Dergi/Images/<sayı no>/
-2008       <yıl>/content/aylar/<ay>_1500/      (_1000 düşük çözünürlük)
+2006-2007  <yıl>/Dergi/Images/<sayı no>/            (klasör adı = dergi sayısı: 154, 155…)
+2008       <yıl>/content/aylar/<ay>_1500/            (_1000 = düşük çözünürlük, kullanılmaz)
 2009-2010  <yıl>/images/large/<NN>_<Ay>/
 2011       <yıl>/images/large_2/<NN>_<Ay>/
 2012       <yıl>/images/_Large/<NN>_<Ay>/
 ```
 
-- **Kapak** çoğu zaman sayfa klasöründe değil: `images/kapaklar/01_ocak.jpg`
-  (veya 2012'de `_kapaklar/Ocak_001.jpg`). Bazı sayılarda klasörün içinde iki
-  kapak dosyası bulunur (`KAPAK_Ocak.jpg` + `AT_202_KAPAK.jpg`) — en büyüğü
-  seçilir, kapak PDF'e **bir kez** girer.
-- **Eksik sayfa = numara atlaması, ama varsayılan olarak DOLDURULMAZ.** 2006 sonrası
-  DVD'ler delikli tarama: bir sayıda 84 görselin karşılığı 141 basılı sayfa çıkıyor,
-  yani sayfaların ~%40'ı hiç taranmamış (çoğu yayın yalnız sol yarısı var). Oraya siyah
-  basmak dergiyi olduğundan farklı gösterir; bu yüzden görseller sırayla konur.
-  Gerçekten dolgu istiyorsan `--blanks` ver.
-- **Yay görselleri bölünmez**, tek geniş sayfa olarak girer.
+### Sıra üç katmandan gelir — güvenilirlik sırasıyla
 
-### `.dir` indeksi ile doğrulama
+**1. `.dir` cast listesi (en güvenilir).** 2008-2012'de her ayın kendi `.dir` dosyası var
+(2009-2012'de DVD kökünde, 2008'de `content/` altında). İçinde **sıralı jpg adları**
+gömülüdür: Director'ın cast sırası, yani uygulamanın sayfaları yükleme sırası.
+`dir_order()` bunu okur.
 
-`.dir` dosyasının içinde her metinli sayfa için `<kayit><sayfa>N</sayfa><data>…`
-kaydı var (sayfa numarası + sayfanın metni). Bu, Flash dönemindeki `pageMask`
-dizisinin karşılığı: sıra için dosya adlarına güvenilebilir, indeks onları
-doğrular (2010-01 ve 2009-01'de 51 sayfanın 50'si birebir; tek fark kapak).
+**2. `.dir` metin indeksi (yalnız doğrulama).** 2009-2012'nin `.dir` dosyalarında ayrıca
+`<kayit><sayfa>N</sayfa><data>sayfa metni</data></kayit>` kayıtları var. Bunlar sayfa
+**numaralarını** doğrular (bir sayıda 39-51 kayıt; son kayıtlar hep 126/128/130 → dergi
+130-138 sayfa). Sırayı vermez.
 
-### Kullanım
+**3. Dosya adı (son çare).** Adlar sayfa numarasını taşır; yaylar iki numarayla yazılır.
+
+Eşleştirme ham ad üzerinden değil **sayı çekirdeği** üzerinden yapılır — 2012'de `.dir`
+referansları ay öneki taşımaz ve `_L`/`_s` sürüm eki taşır:
+
+| `.dir` referansı | klasördeki dosya | çekirdek |
+|---|---|---|
+| `014_015.jpg` | `Ocak_014_015_L.jpg` | `014_015` |
+| `001_s.jpg` | `Ocak_001_L.jpg` | `001` |
+
+Aynı çekirdeğe iki dosya düşerse **büyüğü** seçilir. `.dir` klasördeki görsellerin
+yarısından azını kapsıyorsa (2008'in `aralik.dir`'i yalnız kapağı listeler) o dosya
+sıra için kullanılmaz, ad sıralamasına dönülür.
+
+### Kesinlik tablosu: 237 sayının 209'u kesin, 28'i değil
+
+| Dönem | Sayı | Sıra kaynağı | Kesinlik |
+|-------|------|--------------|----------|
+| 1993-2005 | 153 | `bts` içindeki `setPages`/`pageMask` dizisi | **kesin** |
+| 2008 (10 ay) + 2009-2010 (22 ay) + 2012 (12 ay) | 56 | `.dir` cast listesi | **kesin** |
+| 2010-02, 2010-05, 2011-02, 2011-05 | 4 | dosya adı | **kesin değil** — `.dir` var ama yalnız metin indeksi |
+| 2006, 2007 | 24 | dosya adı | **kesin değil** — aşağıdaki arama boş çıktı |
+
+### 2006-2007: array yok, arama boş çıktı
+
+"Mutlaka bir yerde dizi vardır" sezgisi bu iki yılda **doğrulanamadı**. Denenenler:
+
+- Yıl klasöründeki **tüm görsel-dışı dosyalar** (exe/ocx/dll/u32/xmo/dat/ini) hem tam ad
+  hem uzantısız ad için tarandı → **0 eşleşme**.
+- SWF taraması dosya başından değil **her ofsetten** yapıldı (`FWS`/`CWS`/`ZWS` + sürüm ve
+  uzunluk doğrulaması, CWS'te gerçek `0x78` zlib başlığı) → **geçerli aday 0**.
+- `atlas.exe` **Flash projector değil**: `Flash`, `Shockwave`, `Zinc`, `SWF Studio`,
+  `Screenweaver`, `mProjector` string'lerinin hiçbiri yok; projector EXE'lerinin sonundaki
+  `0xFA123456` işareti de yok (`tail -c 8` → `1a6d3c01a90d3315`).
+- `atlas.exe`'nin son ~13 MB'ı PE dışında **paketli katman** (`PCRS` + `0xAFBCADAC`); içinde
+  Lua bytecode ve bitmap chunk'ları var, Director 4CC'si (`RIFX`/`XFIR`/`CASt`/`Lscr`/`VWSC`)
+  ve düz metin dosya adı yok.
+- Kabuk **VB6**: `alPicView.ocx` = `MSVBVM60.DLL` ile çalışan 86 KB'lık ActiveX görüntüleyici;
+  içinde ne görsel adı ne klasör listesi var.
+- **Belirleyici:** exe `FindFirstFile` çağırıyor, yani sayfa listesini **çalışma anında
+  klasörden** okuyor. Saklanmış dizi yok; sıra = klasör listeleme sırası.
+
+`Dergi/Thumbs/<sayı>/` yalnızca **hangi adlar var** sorusu için kullanıldı (eksik dosya
+tespiti). Sıra için kullanılamaz: damgaları sayfa numarasıyla artıyor (154'te 70/73,
+166'da 68/70) ama bu kanıt değil — küçük resimleri üreten araç klasörü alfabetik
+listeliyorsa aynı sonucu verir.
+
+### Yay mı, tek sayfa mı: kararı görsel verir
+
+Ad vermez, **en-boy oranı** verir: yay ~1,48-1,51, tek sayfa ~0,75-0,76 → `w/h > 1,2` ise
+iki sayfa. "2008 sonrası hep yay" varsayımı yanlıştı: 2009 ve 2012'de dosyalar tek sayfa,
+2008'de karışık, 2007'de `page` düzeni.
+
+Ad aileleri (aynı klasörde karışık çıkabilir):
+
+| ad | anlam |
+|----|-------|
+| `ocak08_panorama.jpg`, `004_ocak.jpg`, `Ocak_001_L.jpg` | 8 / 4 / 1. sayfa |
+| `ocak11_12_atlas raporu.jpg`, `010_011_ocak.jpg` | 11-12 **yayı** |
+| `01_page006.jpg`, `06_pages 006.jpg`, `06_pages_014_015.jpg` | 6 / 6 / 14-15 |
+| `06_kapak.jpg`, `11_kapak.jpg`, `KAPAK_ocak.jpg` | kapak |
+
+`page` **çoğul ve boşluklu** da yazılıyor (`06_pages 006.jpg`): regex `(?:pages?|sayfa)`
+olmalı. Yalnız `page` yazarsan o klasörde hiçbir ad eşleşmez, bütün dosyalar tek anahtara
+düşer ve PDF **1 sayfa** çıkar (2007'nin 12 sayısı baştan böyle bozuldu).
+
+### Kapak kuralı
+
+Kapak çoğu zaman sayfa klasöründe değil: `images/kapaklar/01_ocak.jpg` (2012'de
+`_kapaklar/Ocak_001.jpg`). Klasörün içinde iki kapak adayı olabilir
+(`KAPAK_Ocak.jpg` + `AT_202_KAPAK.jpg`) — **en büyüğü** seçilir ve kapak PDF'e **bir kez**
+girer; dışarıdaki kapak yalnızca klasörde kapak yoksa kullanılır (yoksa PDF başında üç
+kapak oluyor).
+
+### Bilinen anomaliler
+
+| Yer | Ne | Durum |
+|-----|-----|-------|
+| 2007-05 (sayı 170) | 58 normal + **43 `05arka_page_*`** dosyası. "Arka" sayfaların folyosu da aynı (16 → "16", arka → "16") ama **içerik farklı** (biri panorama, diğeri tanıtım sayfası) | **açık** — şu an yalnız "düz" aile PDF'te, 22 sayfa dışarıda. Diğer 23 sayıda böyle bir aile yok. Karar bekliyor: düz sayfanın arkasına mı, ayrı dosyaya mı? |
+| 2006-01 (154) | `ocak08._panorama.jpg`, `ocak08_panorama.jpg`'nın yazım hatası ikizi (fazladan nokta) | kapalı — büyük olan seçildi |
+| 2007-12 (177) | `Thumbs`'ta 4 yay var (`12_pages_48_49`, `96_97`, `98_99`, `0118_0119`), `Images`'ta yok | **açık** — DVD'ye konmamış, PDF'te 4 sayfa eksik |
+| 2006'da 6 sayı | kapak yalnız `Thumbs`'ta, `Images`'ta yok | kapalı — kapak `images/kapaklar`'dan geldi |
+| 2010-02 (203) | 64 ada karşı 62 gerçek dosya (2 hayalet kayıt) + 2 varyant | kapalı — 1 kapak + 60 görsel = 61 sayfa |
+
+### Siyah dolgu: 2006 sonrası varsayılan KAPALI
+
+Bu DVD'ler **delikli tarama**: bir sayıda 84 görsel var ama numaralar 141 basılı sayfaya
+kadar gidiyor — sayfaların ~%40'ı hiç taranmamış (çoğu yayın yalnız sol yarısı var). Oraya
+siyah basmak dergiyi olduğundan farklı gösterir; görseller sırayla konur, dolgu `--blanks`
+ile açıkça istenir. 1993-2005'te durum farklı: orada `dummy` dizisi gerçek eksik reklam
+sayfalarını verir, dolgu doğrudur.
+
+### Kullanım ve doğrulama
 
 ```bash
 python3 dvd2-images2pdf.py --year 2010 --out ~/AtlasPDF
+python3 dvd2-images2pdf.py --year 2010 --out ~/AtlasPDF --blanks   # deliklere siyah koy
 ```
 
-### Tuzak: eksik ISO
-
-DVD2 ISO'su eksik indirilmişse (bildirilen hacim > dosya boyutu) diskin **sonundaki**
-sayılar `Input/output error` verir. Kontrol:
+Üretimden sonra iki kontrol:
 
 ```python
-struct.unpack('<I', open(iso,'rb').read(2048*17)[80:84])[0] * 2048  # beklenen boyut
-os.path.getsize(iso)                                                # gerçek boyut
+pymupdf.open(pdf).page_count      # 1) klasördeki görsel sayısı (+ varsa kapak) ile eşit mi
+python3 test_atlas2pdf.py         # 2) yay/kapak/pageMask kuralları kilitli
 ```
 
-Eşit değilse ISO'yu yeniden oluşturun ya da diski doğrudan bağlayıp `--root` verin.
+### Tuzaklar
+
+- **Eksik ISO:** DVD2 imajı eksikse (bildirilen hacim > dosya boyutu) diskin **sonundaki**
+  sayılar `Input/output error` verir. Kontrol:
+  `struct.unpack('<I', open(iso,'rb').read(2048*17)[80:84])[0] * 2048` vs `os.path.getsize(iso)`.
+  Eşit değilse imajı yeniden al ya da diski bağlayıp `--root` ver.
+- **Disk iş ortasında çıkabilir:** üretim "sayfa klasörü bulunamadı" ile durur. Doğrulanmış
+  ISO'yu aynı yola bağlamak yeterli:
+  `hdiutil attach <iso> -mountpoint "/Volumes/ATLAS 1" -readonly`.
+- **Hayalet klasör kaydı:** `os.listdir` içinde görünen ama açılamayan dosyalar olabilir;
+  `collect()` bunları `os.path.exists` ile atlar. Atlamazsan o sayı tamamen düşer.
+- **Yerelden ağ birimine `os.replace` çalışmaz** (`Errno 18`); `shutil.move` kullan.
 
 ## Katkı
 
