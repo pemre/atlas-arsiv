@@ -253,7 +253,7 @@ kapak oluyor).
 
 | Yer | Ne | Durum |
 |-----|-----|-------|
-| 2007-05 (sayı 170) | 58 normal + **43 `05arka_page_*`** dosyası. "Arka" sayfaların folyosu da aynı (16 → "16", arka → "16") ama **içerik farklı** (biri panorama, diğeri tanıtım sayfası) | **açık** — şu an yalnız "düz" aile PDF'te, 22 sayfa dışarıda. Diğer 23 sayıda böyle bir aile yok. Karar bekliyor: düz sayfanın arkasına mı, ayrı dosyaya mı? |
+| 2007-05 (sayı 170) | 58 düz + **43 `05arka_page_*`** = aynı sayı numaralı **ikinci bir dizgi**. Folyolar dosya adıyla birebir (`arka_page_008` → "8", `arka_page_068_069` → 68/69), ama **içerik başka**: 8. sayfa iki farklı "içindekiler". `Thumbs` de 43 dosyayı içeriyor, yani diskte gerçekten iki versiyon var | **karar verilemez** — hangisinin basıldığı diskten anlaşılmıyor. PDF'te düz aile var (58 sayfa). Basılı sayıyla tek sayfa kıyaslanırsa çözülür. Diğer 23 sayıda bu aile yok |
 | 2006-01 (154) | `ocak08._panorama.jpg`, `ocak08_panorama.jpg`'nın yazım hatası ikizi (fazladan nokta) | kapalı — büyük olan seçildi |
 | 2007-12 (177) | `Thumbs`'ta 4 yay var (`12_pages_48_49`, `96_97`, `98_99`, `0118_0119`), `Images`'ta yok | **açık** — DVD'ye konmamış, PDF'te 4 sayfa eksik |
 | 2006'da 6 sayı | kapak yalnız `Thumbs`'ta, `Images`'ta yok | kapalı — kapak `images/kapaklar`'dan geldi |
