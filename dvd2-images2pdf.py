@@ -182,7 +182,57 @@ def collect(folder, order=None):
         if any(os.path.getsize(path) == os.path.getsize(x) and _ayni(path, x) for x in liste):
             continue
         liste.append(path)
+    _yay_tekrarini_at(best)
     return best, prepend
+
+
+def _vektor(x, n=24):
+    """Görüntü (yol ya da Image) → 24×24 gri, ortalaması çıkarılmış vektör."""
+    from PIL import Image
+    im = Image.open(x) if isinstance(x, str) else x
+    g = im.convert('L').resize((n, n), Image.LANCZOS)
+    d = [int(p) - 128 for p in g.getdata()]
+    m = sum(d) / len(d)
+    return [p - m for p in d]
+
+
+def _benzer(a, b, n=24):
+    """İki görüntünün 24×24 gri vektörleri arasındaki kosinüs benzerliği."""
+    v = [_vektor(a, n), _vektor(b, n)]
+    pay = sum(x * y for x, y in zip(*v))
+    payda = (sum(x * x for x in v[0]) ** .5) * (sum(y * y for y in v[1]) ** .5)
+    return pay / payda if payda else 0.0
+
+
+def _yay_tekrarini_at(best):
+    """Tek sayfa, aynı numaradan başlayan yayın sol yarısıysa tek sayfa atılır.
+
+    2007-02: `02_page082.jpg` görsel olarak `02_page082_083.jpg`'nin sol yarısı
+    (benzerlik 0.99); uygulama yalnız yayı gösteriyor — ikisi birden PDF'e
+    girince aynı sayfa iki kez basılıyordu. 2006+2007'de tek örnek bu."""
+    from PIL import Image
+    for (a, b), liste in list(best.items()):
+        if a != b or not liste or not best.get((a, a + 1)):
+            continue
+        yay = best[(a, a + 1)][0]
+        try:
+            im = Image.open(yay); w, h = im.size
+            sol = im.crop((0, 0, w // 2, h)).copy(); im.close()
+        except OSError:
+            continue
+        kalan = []
+        for tek in liste:
+            try:
+                if _benzer(tek, sol) > 0.85:
+                    log_uyari.append(f'yay tekrari atildi: {os.path.basename(tek)}')
+                    continue
+            except OSError:
+                pass
+            kalan.append(tek)
+        if kalan:
+            best[(a, b)] = kalan
+        else:
+            del best[(a, b)]
 
 
 def thumbs_cover(folder):

@@ -249,6 +249,10 @@ sayfa sayılmıyor; ama başa alınması için numarasız ya da **1. sayfa** olm
 kapaklar (arka kapak, ör. `ekim_109_kapak.jpg`) kendi yerinde kalır — hepsini başa almak
 arka kapağı 2. sayfaya taşıyordu.
 
+**Yay tekrarı atılır.** Aynı numaradan başlayan bir yay (`02_page082_083.jpg`) varken tek
+sayfa (`02_page082.jpg`) o yayın sol yarısıyla görsel olarak eşleşiyorsa (kosinüs > 0,85) tek
+sayfa atılır: aynı sayfa iki kez basılıyordu. 2006+2007'de tek örnek: 167.
+
 **Katlanır sayfa (`katlama`) sessizce düşmemeli.** `temmuz_katlama_1_kelkit.jpg` gibi
 dosyalarda sayfa numarası yok; eskiden hiç PDF'e girmiyordu. Numarası okunamayan katlama
 dosyaları `KATLAMA_YER` tablosundaki aralığa konur (bugün tek kayıt: 2006-07 → 54-55,
@@ -295,6 +299,28 @@ olarak var (`temmuz_KAPAK.jpg`, `kasim_109_kapak.jpg`); `Images/` klasöründe t
 yok. Kullanıcı kararı: bulanık da olsa eklensin → bu iki sayı `KAPAK_THUMBS` listesinde,
 kapak PDF'in ilk sayfası (517×690). Diğer sayılarda ilk sayfa zaten kapağın kendisi
 (1359×1812 ya da 2690×1812 yay), oraya ayrıca kapak eklemek sayfayı yineliyor.
+
+### Uygulamayla doğrulama (2007, 12 sayının tamamı)
+
+Aynı yöntem 2007 sayıları (166-177) için tekrarlandı. Eşik 2007'de **0,62**: doğru eşleşme
+bu yılın görsellerinde 0,73 civarında kalıyor. Ayrıca uygulamanın menüsünde sayıyı açmak
+için **hızlı çift tık** (≤0,15 sn) gerekiyor; yavaş çift tık yalnız seçiyor. Okuyucu
+düğmeleri: menü 668, kapak 759, **ileri ok 938** (geri ok 855), y=913.
+
+Sonuç: **sıra her sayıda tutuyor**, iki notla:
+
+- **167 (2007-02):** `02_page082.jpg` görsel olarak `02_page082_083.jpg` yayının **sol
+  yarısının aynısı** (benzerlik 0,99) — aynı sayfa PDF'e iki kez giriyordu. Kural eklendi:
+  aynı numaradan başlayan bir yay varsa ve tek sayfa o yayın yarısıyla eşleşiyorsa tek sayfa
+  atılır → **74 değil 73 sayfa**. 2006+2007'nin tamamında bu kuralın tetiklendiği tek örnek.
+- **Diğer sayılarda −1 kayma:** uygulama iki ardışık **tek** sayfayı tek karede yan yana
+  gösteriyor (bizim eşleştirici bunu `a+b` adayıyla yakalıyor). Bu bir içerik farkı değil;
+  PDF'te her sayfa bir kez ve doğru sırada.
+- **170 (2007-05):** uygulama 58 kare gösteriyor, bizde 101 sayfa — bu sayının iki dizgisi
+  olduğu zaten biliniyor (bkz. anomali tablosu); uygulama yalnız birinci dizgiyi gezdiriyor.
+
+Kare sayısı ile sayfa sayısı farkı: uygulama her sayının başında bir **kapak karesi** ve
+sonda bir **sarma karesi** üretiyor; bu yüzden kare = sayfa + 1-2.
 
 Çalıştırmak için gerekenler (Türkçe Windows XP şişesi): `msvbvm60.dll` + `asycfilt.dll` +
 `stdole2.tlb` sistem32'ye, sonra `regsvr32 C:\2006\alPicView.ocx`. CrossOver'ın `wine`'ı
