@@ -15,7 +15,7 @@ Arşivin tamamı **237 sayı** (1993-04 → 2012-12) ve iki ayrı hat ile üreti
 | 1993-2005 | 153 | `.bts` = Flash (SWF), sayfalar gömülü | `atlas2pdf.py` |
 | 2006-2012 | 84 | ayrı JPG klasörleri + Director `.dir` indeksi | `dvd2-images2pdf.py` |
 
-Hangi bilginin **kesin**, hangisinin **çıkarım** olduğu [Kesinlik tablosu](#kesinlik-tablosu-237-sayının-209u-kesin-28i-değil) bölümünde yazılı.
+Hangi bilginin **kesin**, hangisinin **çıkarım** olduğu aşağıdaki *Kesinlik tablosu* bölümünde yazılı — devam ederken önce oraya bakın.
 
 ---
 
@@ -133,7 +133,7 @@ Korunuyor. SWF'in içindeki veri JPEG'dir (`DCTDecode`). `swfextract` bu sıkı�
 DVD'de bu var: aynı sayfa 800×1067 (yüksek) ve 495×660 (düşük) olarak iki kez gömülü. Daha yüksek çözünürlük DVD'de yok — basılı dergiyi yeniden taramadan elde edilemez.
 
 **Ne kadar sürer, ne kadar yer kaplar?**
-Mac'te sayı başına ~10 saniye. PDF'ler sayı başına ~25-30 MB; `--pdf-only` ile toplam ~4 GB (153 sayı), JPEG'lerle birlikte ~10 GB.
+Mac'te sayı başına ~10 saniye (2006 sonrası JPG'lerde ~30 saniye). Tam arşiv: 237 PDF, 25.584 sayfa, **7,97 GB** (sayı başına 25-40 MB). JPEG'leri de saklarsan iki katı.
 
 **Hangi DVD'lerle test edildi?**
 `Atlas_Dergisi_1993-2002_DVD1.iso` (117 sayı) ve `Atlas_Dergisi_2003-2012_DVD2.iso` — toplam **237 sayı** (1993-04 → 2012-12), 25.584 sayfa, 7,97 GB. DVD1'de 1993-2005 Flash `.bts` dosyaları (153 sayı), DVD2'de 2003-2005'in devamı + 2006-2012 JPG klasörleri (84 sayı) var.
@@ -288,6 +288,23 @@ python3 test_atlas2pdf.py         # 2) yay/kapak/pageMask kuralları kilitli
 - **Hayalet klasör kaydı:** `os.listdir` içinde görünen ama açılamayan dosyalar olabilir;
   `collect()` bunları `os.path.exists` ile atlar. Atlamazsan o sayı tamamen düşer.
 - **Yerelden ağ birimine `os.replace` çalışmaz** (`Errno 18`); `shutil.move` kullan.
+
+## Nerede ne var (devam ederken)
+
+| Ne | Yer |
+|----|-----|
+| PDF arşivi | `/Volumes/ebook/dergi/Atlas/` — 237 dosya, `YYYY-AA Atlas Dergisi NNN.pdf` |
+| DVD1 imajı (1993-2002, 117 sayı) | `/Volumes/downloads/Atlas_Dergisi_1993-2002_DVD1.iso` — 5.425.004.544 bayt |
+| DVD2 imajı (2003-2012, 120 sayı) | `/Volumes/downloads/Atlas_Dergisi_2003-2012_DVD2.iso` — 6.624.739.328 bayt (PVD ile birebir) |
+| Fiziksel diskler | DVD1 `/Volumes/ATLAS`, DVD2 `/Volumes/ATLAS 1` (salt okunur; imaj varsa gerekmez) |
+| Flash hattı | `atlas2pdf.py` + `rebuild-all.py` + `audit.py` |
+| JPG hattı | `dvd2-images2pdf.py` (`--year`, `--out`, `--blanks`, `--root`) |
+| Testler | `test_atlas2pdf.py` — `pageMask`, yay/kapak, `.dir` sırası kuralları |
+
+Imajı bağlamak: `hdiutil attach <iso> -mountpoint "/Volumes/ATLAS 1" -readonly`.
+Yeniden üretim: önce `python3 dvd2-images2pdf.py --year <yıl> --out <geçici>`, sayfa
+sayılarını doğrula, sonra arşive `cp`. Ayrıntılı tuzaklar: skill `swf-magazine-pages`,
+`references/director-arsiv-2006-arti.md`.
 
 ## Katkı
 
