@@ -282,6 +282,7 @@ kapak oluyor).
 |-----|-----|-------|
 | 2007-05 (sayı 170) | 58 düz + **43 `05arka_page_*`** = aynı sayı numaralı ikinci bir dizgi. Folyolar dosya adıyla birebir (`arka_page_008` → "8", `arka_page_068_069` → 68/69), içerik başka: 8. sayfa iki farklı "içindekiler". `Thumbs` de 43 dosyayı içeriyor | **kapandı** — uygulama klasörde ne varsa gösteriyor, ikisi de gerçek sayfa; PDF 100 sayfa (eskiden 79'du). Diğer 23 sayıda bu aile yok |
 | 2006-01 (154) | `ocak08._panorama.jpg`, `ocak08_panorama.jpg`'nın yazım hatası ikizi (fazladan nokta) | kapalı — büyük olan seçildi |
+| 1993-09 (006) | **Son sayfa** (PDF 98/98, basılı folyo **145**, `p96`) kaynağın `pageMask` dizisinde kayıtlı — sondaki `dummy`'den hemen önce. Orijinal uygulama (1993 `atlas1993.exe`, emülatörde) bu sayfayı göstermiyor: son sayfada takılıyor | **PDF'te duruyor, bilinçli** — dizi kaydı olduğu için çıkarılmadı. Uygulamada görünmemesi uygulama/emülatör tarafı; kaynakta sayfa var |
 | 2007-12 (177) | `Thumbs`'ta 4 yay var (`12_pages_48_49`, `96_97`, `98_99`, `0118_0119`), `Images`'ta yok | **açık** — DVD'ye konmamış, PDF'te 4 sayfa eksik |
 | 2006'da 6 sayı | kapak yalnız `Thumbs`'ta, `Images`'ta yok | kapalı — kapak `images/kapaklar`'dan geldi |
 | 2010-02 (203) | 64 ada karşı 62 gerçek dosya: `022_023_Şubat.jpg` ve `024_Şubat.jpg` **hayalet kayıt** (`os.listdir` gösteriyor, açılamıyor) | kapalı — 62 gerçek dosya, sıra `.dir`'den: **62 sayfa** (eskiden ada göre 61) |
