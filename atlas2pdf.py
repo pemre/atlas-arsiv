@@ -36,6 +36,14 @@ IMGC = (6, 20, 21, 35, 36, 90)   # DefineBits, Lossless, JPEG2/3/4, Lossless2
 # çift sayfa görünümünde kayıyordu; konumlar basılı dergiyle karşılaştırılarak bulundu.
 # Artık gerekmiyor: dolgu yerleri bts'nin kendi ActionScript sayfa dizisinde "dummy"
 # olarak yazılı (bkz. page_plan). Bu sözlük yalnız elle geri düşüş için.
+# pageMask'in sonuna YAZILMAYAN ama uygulamanın son sayfa olarak gösterdiği sayfalar.
+# Elle doğrulandı (1993-10/007: dizi p117+dummy ile bitiyor, uygulamanın son sayfası
+# p118 "özel ilan sayfaları"). Otomatik kural denendi: 6 sayıda aynı desen çıktı ama
+# 2002-02'deki aday sayfa dizinin son sayfasının kopyasıydı → kural değil, liste.
+SON_EK = {7: 'p118',        # 1993-10: "özel ilan sayfaları" (uygulamada görüldü)
+          107: 'p145',      # 2002-02: "mektup" sayfası (folyo 139) — içerik farklı
+          137: 'p225'}      # 2004-08: "Bin Yılın Türkleri" (folyo 190) — içerik farklı
+
 BLANKS = {1: (4, 21, 32, 63, 72, 79),
           2: (34, 77, 84)}   # siyah, bildirilen sayfanın KENDİSİ olur (35, 78, 85)
 
@@ -61,14 +69,6 @@ def page_plan(swf):
             continue
         while seq and seq[-1] == 'dummy':        # sondaki dummy = arka kapak
             seq.pop()
-        # Maskede olmayan, ama export edilmiş pN'ler: uygulama bunları maskeden SONRA
-        # gösteriyor (1993-10/007: dizi sonda `dummy` ile bitiyor, uygulamanın son
-        # sayfası ise p118 = "özel ilan" sayfası). Yalnız maskenin ötesindeki numaralar.
-        maskeli = {int(m.group(1)) for s in seq if (m := re.fullmatch(r'p(\d+)', s))}
-        if maskeli:
-            fazla = sorted({int(m.group(1)) for m in re.finditer(r'exports \d+ as "p(\d+)"', out)}
-                           - maskeli)
-            seq += [f'p{n}' for n in fazla]
         return [None if s == 'dummy' else s for s in seq]
     return None
 
@@ -342,7 +342,7 @@ def _usable(path):
 
 # ---------------------------------------------------------------- dönüştürme
 def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, name=None, log=print,
-            auto_plan=True):
+            auto_plan=True, son_ek=()):
     """Tek bir SWF/.bts dosyasını <out>/NNN.jpg + <out>/<ad>.pdf olarak çıkarır.
     name verilirse PDF/poster bu adı taşır (toplu çevirimde dergi sayı adı)."""
     stem = name or os.path.basename(out)
@@ -411,6 +411,10 @@ def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, name=None, lo
             seq.append(own + str(key[0]) + key[1])
             if idx in blanks:
                 seq.append(None)
+
+    if son_ek:                              # elle doğrulanmış ek son sayfa(lar)
+        seq = list(seq) + list(son_ek)
+        log(f'  ek son sayfa: {", ".join(son_ek)}')
 
     pages, n, blanked, size = [], 0, 0, None
     for item in seq:
@@ -517,7 +521,8 @@ def batch(root, outdir, pdf_only=True, blanks_map=None, tiles_map=None, log=prin
                 work = tempfile.mkdtemp(prefix='atlas-')
                 try:
                     convert(f, work, blanks=blanks_map.get(issue, ()),
-                            tiles_range=(tiles_map or {}).get(issue), name=name, log=log)
+                            tiles_range=(tiles_map or {}).get(issue), name=name, log=log,
+                            son_ek=(SON_EK[issue],) if issue in SON_EK else ())
                     for suffix in ('.pdf', ' harita-poster.jpg'):
                         src = os.path.join(work, name + suffix)
                         if os.path.exists(src):
@@ -527,7 +532,8 @@ def batch(root, outdir, pdf_only=True, blanks_map=None, tiles_map=None, log=prin
             else:
                 convert(f, os.path.join(outdir, name),
                         blanks=blanks_map.get(issue, ()),
-                        tiles_range=(tiles_map or {}).get(issue), name=name, log=log)
+                        tiles_range=(tiles_map or {}).get(issue), name=name, log=log,
+                        son_ek=(SON_EK[issue],) if issue in SON_EK else ())
             ok += 1
         except Exception as e:                       # tek sayı patlarsa devam et
             log(f'  HATA: {e}')
@@ -569,7 +575,9 @@ def main():
         sys.exit(1)
     swf = args[0]
     out = args[1] if len(args) > 1 else os.path.splitext(os.path.basename(swf))[0]
-    stats = convert(swf, out, blanks, opts['pdf_only'], tiles)
+    meta = issue_meta(swf)
+    ek = (SON_EK[meta[2]],) if meta and meta[2] in SON_EK else ()
+    stats = convert(swf, out, blanks, opts['pdf_only'], tiles, son_ek=ek)
     assert stats['pages'] > 0
 
 

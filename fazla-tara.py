@@ -20,8 +20,10 @@ def bak(f):
         plan = a.page_plan(f)
     except Exception as e:
         return f, {'hata': str(e)}
-    mask_p = [int(re.match(r'p(\d+)', x).group(1)) for x in plan if re.fullmatch(r'p\d+_*', x)]
-    exp_p = [int(re.match(r'p(\d+)', x).group(1)) for x in exports if re.fullmatch(r'p\d+_*', x)]
+    mask_p = [int(m.group(1)) for x in plan if isinstance(x, str)
+              and (m := re.fullmatch(r'p(\d+)_*', x))]
+    exp_p = [int(m.group(1)) for x in exports
+             if (m := re.fullmatch(r'p(\d+)_*', x))]
     return f, {
         'plan': len(plan),
         'mask_max': max(mask_p) if mask_p else 0,
