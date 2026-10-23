@@ -70,20 +70,25 @@ def page_plan(swf):
         if names and names[-1] == 'Array':
             names = names[:-1]
         seq = [s for s in reversed(names)
-               # tek alt çizgi gerçek sayfa (p55_), iki+ alt çizgi katlama bandı
-               # (p55__, p55___...) — sayfa değil, dizideki yerleri boş kalıyor.
-               if s == 'dummy' or re.fullmatch(r'[a-z_]+\d+_?', s)]
+               if s == 'dummy' or re.fullmatch(r'[a-z_]+\d+_*', s)]
         if not seq:
             continue
         while seq and seq[-1] == 'dummy':        # sondaki dummy = arka kapak
             seq.pop()
-        # Katlama bantları (p55__ …) diziden düşünce iki dummy yan yana kalabiliyor;
-        # basılı dergide tek boşluk var → ardışık dummy'ler tekile indirilir.
+        # Aynı sayfanın varyantları arasındaki dummy (p55___ , dummy , p55____) basılı
+        # dergide boşluk değil, katlama kırımı → atılır. Gerçek eksik sayfalar kalır.
         out_seq = []
-        for s in seq:
+        for i, s in enumerate(seq):
             v = None if s == 'dummy' else s
-            if v is None and out_seq and out_seq[-1] is None:
-                continue
+            if v is None:
+                if out_seq and out_seq[-1] is None:
+                    continue
+                onceki = out_seq[-1] if out_seq else None
+                sonraki = next((x for x in seq[i + 1:] if x != 'dummy'), None)
+                mp = re.fullmatch(r'p(\d+)_*', onceki or '')
+                mn = re.fullmatch(r'p(\d+)_*', sonraki or '')
+                if mp and mn and mp.group(1) == mn.group(1):
+                    continue
             out_seq.append(v)
         return out_seq
     return None
