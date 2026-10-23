@@ -61,6 +61,14 @@ def page_plan(swf):
             continue
         while seq and seq[-1] == 'dummy':        # sondaki dummy = arka kapak
             seq.pop()
+        # Maskede olmayan, ama export edilmiş pN'ler: uygulama bunları maskeden SONRA
+        # gösteriyor (1993-10/007: dizi sonda `dummy` ile bitiyor, uygulamanın son
+        # sayfası ise p118 = "özel ilan" sayfası). Yalnız maskenin ötesindeki numaralar.
+        maskeli = {int(m.group(1)) for s in seq if (m := re.fullmatch(r'p(\d+)', s))}
+        if maskeli:
+            fazla = sorted({int(m.group(1)) for m in re.finditer(r'exports \d+ as "p(\d+)"', out)}
+                           - maskeli)
+            seq += [f'p{n}' for n in fazla]
         return [None if s == 'dummy' else s for s in seq]
     return None
 
