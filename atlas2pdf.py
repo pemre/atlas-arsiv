@@ -16,6 +16,7 @@ Sayfa sırası nereden geliyor?
     sıralayan her araç sayfa sırasını bozar. Doğrusu addaki sayıya göre sıralamak.
     Zincir:  "pN" -> sprite -> PLACEOBJECT2 çocuğu -> DefineShape -> bitmap fill id
 """
+import hashlib
 import os
 import re
 import shutil
@@ -27,7 +28,7 @@ import tempfile
 import zlib
 from collections import defaultdict
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 IMGC = (6, 20, 21, 35, 36, 90)   # DefineBits, Lossless, JPEG2/3/4, Lossless2
 
@@ -40,6 +41,11 @@ IMGC = (6, 20, 21, 35, 36, 90)   # DefineBits, Lossless, JPEG2/3/4, Lossless2
 # Elle doğrulandı (1993-10/007: dizi p117+dummy ile bitiyor, uygulamanın son sayfası
 # p118 "özel ilan sayfaları"). Otomatik kural denendi: 6 sayıda aynı desen çıktı ama
 # 2002-02'deki aday sayfa dizinin son sayfasının kopyasıydı → kural değil, liste.
+# Dizide olan ama basılmayan/tekrar eden sayfalar (elle doğrulandı).
+# 1994-02: p112-p114 düşük çözünürlüklü ikiz ailesinde, içerikleri p110-p112 ile aynı
+# → PDF'te 114-116. sayfaların aynısı olarak tekrar ediyorlardı.
+ATLA = {11: ('p112', 'p113', 'p114')}
+
 SON_EK = {7: 'p118',        # 1993-10: "özel ilan sayfaları" (uygulamada görüldü)
           107: 'p145',      # 2002-02: "mektup" sayfası (folyo 139) — içerik farklı
           137: 'p225'}      # 2004-08: "Bin Yılın Türkleri" (folyo 190) — içerik farklı
@@ -64,12 +70,22 @@ def page_plan(swf):
         if names and names[-1] == 'Array':
             names = names[:-1]
         seq = [s for s in reversed(names)
-               if s == 'dummy' or re.fullmatch(r'[a-z_]+\d+', s)]
+               # tek alt çizgi gerçek sayfa (p55_), iki+ alt çizgi katlama bandı
+               # (p55__, p55___...) — sayfa değil, dizideki yerleri boş kalıyor.
+               if s == 'dummy' or re.fullmatch(r'[a-z_]+\d+_?', s)]
         if not seq:
             continue
         while seq and seq[-1] == 'dummy':        # sondaki dummy = arka kapak
             seq.pop()
-        return [None if s == 'dummy' else s for s in seq]
+        # Katlama bantları (p55__ …) diziden düşünce iki dummy yan yana kalabiliyor;
+        # basılı dergide tek boşluk var → ardışık dummy'ler tekile indirilir.
+        out_seq = []
+        for s in seq:
+            v = None if s == 'dummy' else s
+            if v is None and out_seq and out_seq[-1] is None:
+                continue
+            out_seq.append(v)
+        return out_seq
     return None
 
 
@@ -168,7 +184,7 @@ def page_images(swf):
     uses = shape_bitmaps(swf)
     fams = defaultdict(dict)
     for name, sid in exports.items():
-        m = re.fullmatch(r'([a-zA-Z_]*?)(\d+)(_?)', name)
+        m = re.fullmatch(r'([a-zA-Z_]*?)(\d+)(_*)', name)
         if m:
             img = first_bitmap(sid, sprites, uses, images)
             if img:
@@ -342,7 +358,7 @@ def _usable(path):
 
 # ---------------------------------------------------------------- dönüştürme
 def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, name=None, log=print,
-            auto_plan=True, son_ek=()):
+            auto_plan=True, son_ek=(), atla=()):
     """Tek bir SWF/.bts dosyasını <out>/NNN.jpg + <out>/<ad>.pdf olarak çıkarır.
     name verilirse PDF/poster bu adı taşır (toplu çevirimde dergi sayı adı)."""
     stem = name or os.path.basename(out)
@@ -412,6 +428,11 @@ def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, name=None, lo
             if idx in blanks:
                 seq.append(None)
 
+    if atla:                                # elle doğrulanmış atlanacak sayfalar
+        oncesi = len(seq)
+        seq = [x for x in seq if x not in set(atla)]
+        log(f'  atlanan sayfa: {", ".join(atla)} ({oncesi - len(seq)} kayıt)')
+
     if son_ek:                              # elle doğrulanmış ek son sayfa(lar)
         seq = list(seq) + list(son_ek)
         log(f'  ek son sayfa: {", ".join(son_ek)}')
@@ -428,7 +449,7 @@ def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, name=None, lo
             continue
         hit = by_name.get(item)
         if hit is None:                    # eksik export: aynı numaranın ikizi
-            m = re.fullmatch(r'([a-zA-Z_]*?)(\d+)(_?)', item)
+            m = re.fullmatch(r'([a-zA-Z_]*?)(\d+)(_*)', item)
             twin = [(p, (int(m.group(2)), m.group(3))) for p in cands
                     if m and (int(m.group(2)), m.group(3)) in fams[p]]
             if twin:
@@ -450,6 +471,8 @@ def convert(swf, out, blanks=(), pdf_only=False, tiles_range=None, name=None, lo
         if not f:
             log(f'  atlandı (çıkarılamadı): {item}')
             continue
+        # Aynı sayfa iki kez: düşük çözünürlüklü ikiz, önceki sayfanın birebir kopyası
+        # olabiliyor (1994-02'de p112-114 = p110-111'in ikizi). Kopya sayfa atılır.
         n += 1
         dst = f'{tmp}/p{n:04d}.jpg'
         shutil.copy(f, dst)
@@ -522,7 +545,8 @@ def batch(root, outdir, pdf_only=True, blanks_map=None, tiles_map=None, log=prin
                 try:
                     convert(f, work, blanks=blanks_map.get(issue, ()),
                             tiles_range=(tiles_map or {}).get(issue), name=name, log=log,
-                            son_ek=(SON_EK[issue],) if issue in SON_EK else ())
+                            son_ek=(SON_EK[issue],) if issue in SON_EK else (),
+                            atla=ATLA.get(issue, ()))
                     for suffix in ('.pdf', ' harita-poster.jpg'):
                         src = os.path.join(work, name + suffix)
                         if os.path.exists(src):
@@ -577,7 +601,8 @@ def main():
     out = args[1] if len(args) > 1 else os.path.splitext(os.path.basename(swf))[0]
     meta = issue_meta(swf)
     ek = (SON_EK[meta[2]],) if meta and meta[2] in SON_EK else ()
-    stats = convert(swf, out, blanks, opts['pdf_only'], tiles, son_ek=ek)
+    at = ATLA.get(meta[2], ()) if meta else ()
+    stats = convert(swf, out, blanks, opts['pdf_only'], tiles, son_ek=ek, atla=at)
     assert stats['pages'] > 0
 
 
